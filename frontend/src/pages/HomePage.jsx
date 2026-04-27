@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import Navbar from '../components/Navbar';
 import ContentCard from '../components/ContentCard';
-import { Search, Filter, Radio, Play, Eye } from 'lucide-react';
+import { Search, Filter, Radio, Play, Eye, Crown } from 'lucide-react';
 
 export default function HomePage() {
   const [contents, setContents] = useState([]);
@@ -140,14 +140,19 @@ export default function HomePage() {
                 <div className="card-thumb" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
                   <span className="card-icon">🎬</span>
                   <div className="card-overlay"><Play size={32} fill="white" color="white" /></div>
+                  {v.is_premium && <div className="card-lock"><Crown size={12} /> Premium</div>}
                 </div>
                 <div className="card-info">
                   <span className="card-type">Publisher Video</span>
                   <h3>{v.title}</h3>
-                  <p>{v.description?.slice(0, 70)}...</p>
+                  <p>{v.description?.slice(0, 70) || 'No description'}...</p>
+                  <div className="publisher-name-row">
+                    <div className="pub-avatar-sm">{v.publisher_name?.[0]?.toUpperCase()}</div>
+                    <span>{v.publisher_name}</span>
+                  </div>
                   <div className="card-footer">
-                    <span>by {v.publisher_name}</span>
-                    <span><Eye size={12} /> {v.views}</span>
+                    <span><Eye size={12} /> {v.views} views</span>
+                    <span>{new Date(v.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>

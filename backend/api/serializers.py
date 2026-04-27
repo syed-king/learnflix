@@ -116,6 +116,6 @@ class PublisherVideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PublisherVideo
-        fields = ['id', 'publisher', 'publisher_name', 'title', 'description', 'video_url',
-                  'thumbnail', 'category', 'category_name', 'is_premium', 'views', 'created_at']
+        fields = ['id', 'publisher', 'publisher_name', 'title', 'description', 'video_file',
+                  'video_url', 'thumbnail', 'category', 'category_name', 'is_premium', 'views', 'created_at']
         read_only_fields = ['publisher', 'views']

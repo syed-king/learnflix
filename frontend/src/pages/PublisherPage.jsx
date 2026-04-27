@@ -1,10 +1,214 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import { useAuth } from '../AuthContext';
 import Navbar from '../components/Navbar';
 import toast from 'react-hot-toast';
-import { Upload, Radio, Settings, Plus, Trash2, Play, Eye, X, Save, Crown } from 'lucide-react';
+import { Upload, Radio, Settings, Plus, Trash2, Play, Eye, X, Save, Crown, Camera, Mic, MicOff, VideoOff, Monitor, StopCircle } from 'lucide-react';
 
+// ── Live Studio Component ──────────────────────────────────────────────────
+function LiveStudio({ stream, onEnd }) {
+  const videoRef = useRef(null);
+  const [mediaStream, setMediaStream] = useState(null);
+  const [camOn, setCamOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
+  const [permError, setPermError] = useState('');
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    startMedia();
+    return () => stopMedia();
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setDuration(d => d + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const startMedia = async () => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setMediaStream(s);
+      if (videoRef.current) videoRef.current.srcObject = s;
+    } catch (err) {
+      setPermError('Camera/Microphone permission denied. Please allow access in your browser settings.');
+    }
+  };
+
+  const stopMedia = () => {
+    mediaStream?.getTracks().forEach(t => t.stop());
+  };
+
+  const toggleCam = () => {
+    mediaStream?.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
+    setCamOn(p => !p);
+  };
+
+  const toggleMic = () => {
+    mediaStream?.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
+    setMicOn(p => !p);
+  };
+
+  const fmt = s => `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+  if (permError) return (
+    <div className="studio-perm-error">
+      <Camera size={48} color="#e50914" />
+      <h3>Permission Required</h3>
+      <p>{permError}</p>
+      <button className="btn-primary" style={{ width: 'auto' }} onClick={startMedia}>Try Again</button>
+    </div>
+  );
+
+  return (
+    <div className="live-studio">
+      <div className="studio-header">
+        <div className="studio-live-badge">🔴 LIVE — {fmt(duration)}</div>
+        <h2>{stream.title}</h2>
+      </div>
+      <div className="studio-main">
+        <div className="studio-preview">
+          {camOn
+            ? <video ref={videoRef} autoPlay muted playsInline className="studio-video" />
+            : <div className="studio-cam-off"><VideoOff size={64} color="#555" /><p>Camera Off</p></div>
+          }
+          <div className="studio-overlay-info">
+            <span className="studio-mic-indicator">{micOn ? <Mic size={14} /> : <MicOff size={14} color="#e50914" />}</span>
+          </div>
+        </div>
+        <div className="studio-controls">
+          <h3>Stream Controls</h3>
+          <div className="studio-btns">
+            <button className={`studio-ctrl-btn ${!camOn ? 'off' : ''}`} onClick={toggleCam}>
+              {camOn ? <Camera size={20} /> : <VideoOff size={20} />}
+              <span>{camOn ? 'Camera On' : 'Camera Off'}</span>
+            </button>
+            <button className={`studio-ctrl-btn ${!micOn ? 'off' : ''}`} onClick={toggleMic}>
+              {micOn ? <Mic size={20} /> : <MicOff size={20} />}
+              <span>{micOn ? 'Mic On' : 'Mic Off'}</span>
+            </button>
+          </div>
+          <div className="studio-info-box">
+            <p><strong>Stream Key:</strong></p>
+            <code>{stream.stream_key}</code>
+            <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text3)' }}>
+              Use OBS or any streaming software with this key to broadcast to your audience.
+            </p>
+          </div>
+          <button className="btn-end" style={{ width: '100%', justifyContent: 'center', marginTop: '1rem' }} onClick={() => { stopMedia(); onEnd(); }}>
+            <StopCircle size={18} /> End Stream
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Upload Video Form ──────────────────────────────────────────────────────
+function UploadVideoModal({ onClose, onUploaded }) {
+  const [form, setForm] = useState({ title: '', description: '', is_premium: false });
+  const [file, setFile] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+
+  const submit = async e => {
+    e.preventDefault();
+    if (!file) return toast.error('Please select a video file');
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('title', form.title);
+    fd.append('description', form.description);
+    fd.append('is_premium', form.is_premium);
+    fd.append('video_file', file);
+    try {
+      const { data } = await api.post('/publisher/videos/', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: e => setProgress(Math.round((e.loaded * 100) / e.total)),
+      });
+      onUploaded(data);
+      toast.success('Video uploaded!');
+    } catch { toast.error('Upload failed'); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}><X size={20} /></button>
+        <h2 style={{ marginBottom: '1.5rem' }}>Upload Video</h2>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <input className="pub-input" placeholder="Video Title" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+          <textarea className="pub-input" placeholder="Description" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+
+          <div className="file-drop-zone" onClick={() => document.getElementById('video-file-input').click()}>
+            {file ? (
+              <div className="file-selected">
+                <Play size={24} color="#e50914" />
+                <span>{file.name}</span>
+                <span style={{ color: 'var(--text3)', fontSize: '0.8rem' }}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+              </div>
+            ) : (
+              <>
+                <Upload size={32} color="#555" />
+                <p>Click to select video file</p>
+                <span>MP4, MOV, AVI, MKV supported</span>
+              </>
+            )}
+            <input id="video-file-input" type="file" accept="video/*" style={{ display: 'none' }} onChange={e => setFile(e.target.files[0])} />
+          </div>
+
+          {uploading && (
+            <div className="upload-progress">
+              <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
+              <span>{progress}%</span>
+            </div>
+          )}
+
+          <label className="checkbox-label">
+            <input type="checkbox" checked={form.is_premium} onChange={e => setForm({ ...form, is_premium: e.target.checked })} />
+            Premium content (requires subscription)
+          </label>
+          <button type="submit" className="btn-primary" disabled={uploading}>
+            {uploading ? <><span className="spinner" /> Uploading {progress}%</> : <><Upload size={16} /> Upload Video</>}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Create Stream Modal ────────────────────────────────────────────────────
+function CreateStreamModal({ onClose, onCreate }) {
+  const [form, setForm] = useState({ title: '', description: '' });
+
+  const submit = async e => {
+    e.preventDefault();
+    try {
+      const { data } = await api.post('/live/', form);
+      onCreate(data);
+      toast.success('Stream created! Click Go Live to start.');
+    } catch { toast.error('Failed to create stream'); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}><X size={20} /></button>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <Radio size={36} color="#e50914" />
+          <h2 style={{ marginTop: '0.75rem' }}>Create Live Stream</h2>
+          <p style={{ color: 'var(--text2)', fontSize: '0.9rem' }}>Set up your stream details before going live</p>
+        </div>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <input className="pub-input" placeholder="Stream Title" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+          <textarea className="pub-input" placeholder="What will you be streaming about?" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          <button type="submit" className="btn-primary"><Radio size={16} /> Create Stream</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Publisher Page ────────────────────────────────────────────────────
 export default function PublisherPage() {
   const { user, refreshUser } = useAuth();
   const [tab, setTab] = useState('videos');
@@ -12,8 +216,7 @@ export default function PublisherPage() {
   const [streams, setStreams] = useState([]);
   const [showVideoForm, setShowVideoForm] = useState(false);
   const [showStreamForm, setShowStreamForm] = useState(false);
-  const [videoForm, setVideoForm] = useState({ title: '', description: '', video_url: '', is_premium: false });
-  const [streamForm, setStreamForm] = useState({ title: '', description: '', stream_url: '' });
+  const [activeStudio, setActiveStudio] = useState(null);
   const [profileForm, setProfileForm] = useState({ bio: '', phone: '', website: '', social_link: '' });
   const [saving, setSaving] = useState(false);
 
@@ -21,25 +224,9 @@ export default function PublisherPage() {
     api.get('/publisher/videos/').then(r => setVideos(r.data)).catch(() => {});
     api.get('/publisher/streams/').then(r => setStreams(r.data)).catch(() => {});
     if (user?.profile) {
-      setProfileForm({
-        bio: user.profile.bio || '',
-        phone: user.profile.phone || '',
-        website: user.profile.website || '',
-        social_link: user.profile.social_link || '',
-      });
+      setProfileForm({ bio: user.profile.bio || '', phone: user.profile.phone || '', website: user.profile.website || '', social_link: user.profile.social_link || '' });
     }
   }, [user]);
-
-  const uploadVideo = async e => {
-    e.preventDefault();
-    try {
-      const { data } = await api.post('/publisher/videos/', videoForm);
-      setVideos([data, ...videos]);
-      setShowVideoForm(false);
-      setVideoForm({ title: '', description: '', video_url: '', is_premium: false });
-      toast.success('Video uploaded!');
-    } catch { toast.error('Failed to upload'); }
-  };
 
   const deleteVideo = async id => {
     await api.delete(`/publisher/videos/${id}/`);
@@ -47,21 +234,19 @@ export default function PublisherPage() {
     toast.success('Video deleted');
   };
 
-  const createStream = async e => {
-    e.preventDefault();
-    try {
-      const { data } = await api.post('/live/', streamForm);
-      setStreams([data, ...streams]);
-      setShowStreamForm(false);
-      setStreamForm({ title: '', description: '', stream_url: '' });
-      toast.success('Stream created!');
-    } catch { toast.error('Failed to create stream'); }
+  const goLive = async stream => {
+    const { data } = await api.put(`/publisher/streams/control/${stream.id}/`, { action: 'go_live' });
+    setStreams(streams.map(s => s.id === stream.id ? data : s));
+    setActiveStudio(data);
+    setTab('live');
   };
 
-  const controlStream = async (id, action) => {
-    const { data } = await api.put(`/publisher/streams/control/${id}/`, { action });
-    setStreams(streams.map(s => s.id === id ? data : s));
-    toast.success(action === 'go_live' ? '🔴 You are now LIVE!' : 'Stream ended');
+  const endStream = async () => {
+    if (!activeStudio) return;
+    const { data } = await api.put(`/publisher/streams/control/${activeStudio.id}/`, { action: 'end' });
+    setStreams(streams.map(s => s.id === activeStudio.id ? data : s));
+    setActiveStudio(null);
+    toast.success('Stream ended');
   };
 
   const saveProfile = async e => {
@@ -92,16 +277,18 @@ export default function PublisherPage() {
           </div>
           {[
             { key: 'videos', icon: <Upload size={18} />, label: 'My Videos' },
-            { key: 'live', icon: <Radio size={18} />, label: 'Live Streams' },
+            { key: 'live', icon: <Radio size={18} />, label: 'Live Streams', dot: activeStudio },
             { key: 'settings', icon: <Settings size={18} />, label: 'Settings' },
           ].map(item => (
             <button key={item.key} className={`sidebar-btn ${tab === item.key ? 'active' : ''}`} onClick={() => setTab(item.key)}>
               {item.icon} {item.label}
+              {item.dot && <span className="live-dot" />}
             </button>
           ))}
         </aside>
 
         <main className="publisher-main">
+
           {/* VIDEOS TAB */}
           {tab === 'videos' && (
             <div>
@@ -111,41 +298,23 @@ export default function PublisherPage() {
                   <Plus size={16} /> Upload Video
                 </button>
               </div>
-
-              {showVideoForm && (
-                <div className="modal-overlay" onClick={() => setShowVideoForm(false)}>
-                  <div className="modal" onClick={e => e.stopPropagation()}>
-                    <button className="modal-close" onClick={() => setShowVideoForm(false)}><X size={20} /></button>
-                    <h2 style={{ marginBottom: '1.5rem' }}>Upload New Video</h2>
-                    <form onSubmit={uploadVideo} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <input className="pub-input" placeholder="Video Title" required value={videoForm.title} onChange={e => setVideoForm({ ...videoForm, title: e.target.value })} />
-                      <textarea className="pub-input" placeholder="Description" rows={3} value={videoForm.description} onChange={e => setVideoForm({ ...videoForm, description: e.target.value })} />
-                      <input className="pub-input" placeholder="Video URL (YouTube embed or direct)" required value={videoForm.video_url} onChange={e => setVideoForm({ ...videoForm, video_url: e.target.value })} />
-                      <label className="checkbox-label">
-                        <input type="checkbox" checked={videoForm.is_premium} onChange={e => setVideoForm({ ...videoForm, is_premium: e.target.checked })} />
-                        Premium content (requires subscription)
-                      </label>
-                      <button type="submit" className="btn-primary"><Upload size={16} /> Upload</button>
-                    </form>
-                  </div>
-                </div>
-              )}
-
+              {showVideoForm && <UploadVideoModal onClose={() => setShowVideoForm(false)} onUploaded={v => { setVideos([v, ...videos]); setShowVideoForm(false); }} />}
               <div className="videos-grid">
                 {videos.length === 0 ? (
                   <div className="empty-state"><Upload size={48} /><p>No videos yet. Upload your first video!</p></div>
                 ) : videos.map(v => (
                   <div key={v.id} className="video-card">
                     <div className="video-thumb">
-                      <Play size={32} color="white" />
-                      {v.is_premium && <span className="card-lock"><Crown size={12} /> Premium</span>}
+                      <Play size={28} color="white" />
+                      {v.is_premium && <span className="card-lock" style={{ position: 'absolute', bottom: 4, left: 4 }}><Crown size={10} /></span>}
                     </div>
                     <div className="video-info">
                       <h3>{v.title}</h3>
-                      <p>{v.description?.slice(0, 60)}...</p>
+                      <p>{v.description?.slice(0, 60) || 'No description'}...</p>
                       <div className="video-meta">
                         <span><Eye size={12} /> {v.views} views</span>
                         <span>{new Date(v.created_at).toLocaleDateString()}</span>
+                        {v.video_file && <span style={{ color: '#22c55e' }}>✓ Uploaded</span>}
                       </div>
                     </div>
                     <button className="icon-btn danger" onClick={() => deleteVideo(v.id)}><Trash2 size={16} /></button>
@@ -158,60 +327,51 @@ export default function PublisherPage() {
           {/* LIVE TAB */}
           {tab === 'live' && (
             <div>
-              <div className="pub-header">
-                <h1>Live Streams</h1>
-                <button className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowStreamForm(true)}>
-                  <Plus size={16} /> New Stream
-                </button>
-              </div>
-
-              {showStreamForm && (
-                <div className="modal-overlay" onClick={() => setShowStreamForm(false)}>
-                  <div className="modal" onClick={e => e.stopPropagation()}>
-                    <button className="modal-close" onClick={() => setShowStreamForm(false)}><X size={20} /></button>
-                    <h2 style={{ marginBottom: '1.5rem' }}>Create Live Stream</h2>
-                    <form onSubmit={createStream} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <input className="pub-input" placeholder="Stream Title" required value={streamForm.title} onChange={e => setStreamForm({ ...streamForm, title: e.target.value })} />
-                      <textarea className="pub-input" placeholder="Description" rows={3} value={streamForm.description} onChange={e => setStreamForm({ ...streamForm, description: e.target.value })} />
-                      <input className="pub-input" placeholder="Stream URL (YouTube Live / Twitch embed)" value={streamForm.stream_url} onChange={e => setStreamForm({ ...streamForm, stream_url: e.target.value })} />
-                      <button type="submit" className="btn-primary"><Radio size={16} /> Create Stream</button>
-                    </form>
+              {activeStudio ? (
+                <LiveStudio stream={activeStudio} onEnd={endStream} />
+              ) : (
+                <>
+                  <div className="pub-header">
+                    <h1>Live Streams</h1>
+                    <button className="btn-primary" style={{ width: 'auto' }} onClick={() => setShowStreamForm(true)}>
+                      <Plus size={16} /> New Stream
+                    </button>
                   </div>
-                </div>
+                  {showStreamForm && <CreateStreamModal onClose={() => setShowStreamForm(false)} onCreate={s => { setStreams([s, ...streams]); setShowStreamForm(false); }} />}
+                  <div className="streams-list">
+                    {streams.length === 0 ? (
+                      <div className="empty-state"><Radio size={48} /><p>No streams yet. Create your first live stream!</p></div>
+                    ) : streams.map(s => (
+                      <div key={s.id} className="stream-card">
+                        <div className="stream-info">
+                          <div className="stream-status-row">
+                            <span className={`stream-status ${s.status}`}>{s.status === 'live' ? '🔴 LIVE' : s.status}</span>
+                            <h3>{s.title}</h3>
+                          </div>
+                          <p>{s.description}</p>
+                          <div className="stream-meta">
+                            <span><Monitor size={12} /> Key: <code>{s.stream_key?.slice(0, 12)}...</code></span>
+                            <span><Eye size={12} /> {s.viewer_count} viewers</span>
+                            <span>{new Date(s.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="stream-actions">
+                          {s.status === 'scheduled' && (
+                            <button className="btn-live" onClick={() => goLive(s)}>
+                              <Camera size={16} /> Go Live
+                            </button>
+                          )}
+                          {s.status === 'live' && (
+                            <button className="btn-live" onClick={() => setActiveStudio(s)}>
+                              <Radio size={16} /> Open Studio
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
-
-              <div className="streams-list">
-                {streams.length === 0 ? (
-                  <div className="empty-state"><Radio size={48} /><p>No streams yet. Create your first live stream!</p></div>
-                ) : streams.map(s => (
-                  <div key={s.id} className="stream-card">
-                    <div className="stream-info">
-                      <div className="stream-status-row">
-                        <span className={`stream-status ${s.status}`}>{s.status === 'live' ? '🔴 LIVE' : s.status}</span>
-                        <h3>{s.title}</h3>
-                      </div>
-                      <p>{s.description}</p>
-                      <div className="stream-meta">
-                        <span>Key: <code>{s.stream_key?.slice(0, 12)}...</code></span>
-                        <span><Eye size={12} /> {s.viewer_count} viewers</span>
-                        <span>{new Date(s.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <div className="stream-actions">
-                      {s.status === 'scheduled' && (
-                        <button className="btn-live" onClick={() => controlStream(s.id, 'go_live')}>
-                          <Radio size={16} /> Go Live
-                        </button>
-                      )}
-                      {s.status === 'live' && (
-                        <button className="btn-end" onClick={() => controlStream(s.id, 'end')}>
-                          <X size={16} /> End Stream
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
