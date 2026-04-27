@@ -26,6 +26,8 @@ urlpatterns = [
     # Viewer
     path('live/', views.live_streams, name='live-streams'),
     path('videos/', views.all_publisher_videos, name='all-videos'),
+    path('videos/<int:pk>/', views.publisher_video_watch, name='video-watch'),
+    path('publishers/', views.all_publishers, name='all-publishers'),
 
     # Admin
     path('admin/users/', views.admin_users, name='admin-users'),

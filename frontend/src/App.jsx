@@ -7,7 +7,9 @@ import ContentPage from './pages/ContentPage';
 import SettingsPage from './pages/SettingsPage';
 import AdminPage from './pages/AdminPage';
 import PublisherPage from './pages/PublisherPage';
+import PublisherProfilePage from './pages/PublisherProfilePage';
 import LiveWatchPage from './pages/LiveWatchPage';
+import VideoWatchPage from './pages/VideoWatchPage';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -37,6 +39,8 @@ function AppRoutes() {
       <Route path="/content/:id" element={<PrivateRoute><ContentPage /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
       <Route path="/live/:id" element={<PrivateRoute><LiveWatchPage /></PrivateRoute>} />
+      <Route path="/publisher/:id" element={<PrivateRoute><PublisherProfilePage /></PrivateRoute>} />
+      <Route path="/watch/:id" element={<PrivateRoute><VideoWatchPage /></PrivateRoute>} />
       <Route path="/publisher" element={<PublisherRoute><PublisherPage /></PublisherRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/" />} />

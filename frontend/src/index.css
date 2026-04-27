@@ -394,3 +394,58 @@ input, textarea { font-family: inherit; }
   .studio-main { grid-template-columns: 1fr; }
   .studio-controls { border-left: none; border-top: 1px solid var(--border); }
 }
+
+/* ===== VIEWER HERO ===== */
+.viewer-hero { height: 30vh; background: linear-gradient(135deg, #0a0a0a 0%, #1a0000 50%, #0a0a0a 100%); display: flex; align-items: center; padding: 0 3rem; margin-top: 64px; }
+.viewer-hero-content h1 { font-size: 2.5rem; font-weight: 800; }
+.viewer-hero-content p { color: var(--text2); margin-top: 0.5rem; font-size: 1rem; }
+
+/* ===== PUBLISHERS LIST ===== */
+.publishers-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.publisher-row { display: flex; align-items: center; gap: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; cursor: pointer; transition: all 0.2s; }
+.publisher-row:hover { border-color: var(--red); background: rgba(229,9,20,0.04); transform: translateX(4px); }
+.publisher-row-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--red), #ff6b6b); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; flex-shrink: 0; }
+.publisher-row-info { flex: 1; }
+.publisher-row-info h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.2rem; }
+.publisher-row-info p { color: var(--text2); font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
+.pub-bio { color: var(--text3) !important; font-size: 0.8rem !important; margin-top: 0.25rem; }
+.pub-id-tag { background: rgba(229,9,20,0.1); color: var(--red); font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600; }
+.publisher-row-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; color: var(--text2); font-size: 0.85rem; }
+.publisher-row-meta span { display: flex; align-items: center; gap: 0.3rem; }
+
+/* ===== PUBLISHER PROFILE PAGE ===== */
+.pub-profile-page { padding: 1.5rem 3rem 4rem; max-width: 1200px; margin: 0 auto; }
+.pub-profile-header { margin-bottom: 2.5rem; }
+.pub-profile-info { display: flex; align-items: flex-start; gap: 1.5rem; margin-top: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; }
+.pub-profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--red), #ff6b6b); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; flex-shrink: 0; }
+.pub-profile-info h1 { font-size: 1.6rem; font-weight: 700; }
+.pub-profile-info > div:nth-child(2) { flex: 1; }
+.pub-profile-info p { color: var(--text2); font-size: 0.9rem; margin-top: 0.25rem; }
+.pub-profile-bio { color: var(--text2) !important; margin-top: 0.75rem !important; line-height: 1.6; }
+.pub-profile-links { display: flex; gap: 1rem; margin-top: 0.75rem; }
+.pub-profile-links a { display: flex; align-items: center; gap: 0.4rem; color: var(--red); font-size: 0.85rem; transition: opacity 0.2s; }
+.pub-profile-links a:hover { opacity: 0.8; }
+.pub-profile-stat { text-align: center; padding: 0 1.5rem; border-left: 1px solid var(--border); }
+.pub-profile-stat h2 { font-size: 2rem; font-weight: 800; color: var(--red); }
+.pub-profile-stat p { color: var(--text2); font-size: 0.85rem; }
+.pub-profile-body h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.25rem; }
+
+/* ===== VIDEO WATCH PAGE ===== */
+.video-watch-body { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; padding: 1.5rem 3rem 4rem; max-width: 1400px; margin: 0 auto; }
+.video-watch-main { display: flex; flex-direction: column; gap: 1.5rem; }
+.video-watch-info { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+.video-watch-info h1 { font-size: 1.6rem; font-weight: 700; margin-top: 0.75rem; }
+.video-watch-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+.pub-sidebar-profile { display: flex; align-items: center; gap: 1rem; cursor: pointer; padding: 0.75rem; border-radius: 8px; transition: background 0.2s; margin-top: 0.5rem; }
+.pub-sidebar-profile:hover { background: var(--surface2); }
+
+@media (max-width: 1024px) {
+  .video-watch-body { grid-template-columns: 1fr; }
+  .pub-profile-info { flex-wrap: wrap; }
+}
+@media (max-width: 768px) {
+  .pub-profile-page { padding: 1rem 1.5rem 3rem; }
+  .viewer-hero { padding: 0 1.5rem; }
+  .viewer-hero-content h1 { font-size: 1.8rem; }
+  .video-watch-body { padding: 1rem 1.5rem 3rem; }
+}

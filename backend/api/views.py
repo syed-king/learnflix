@@ -206,8 +206,45 @@ def stream_control(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_publisher_videos(request):
-    videos = PublisherVideo.objects.all().order_by('-created_at')
+    publisher_id = request.query_params.get('publisher')
+    if publisher_id:
+        videos = PublisherVideo.objects.filter(publisher__id=publisher_id).order_by('-created_at')
+    else:
+        videos = PublisherVideo.objects.all().order_by('-created_at')
     return Response(PublisherVideoSerializer(videos, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def publisher_video_watch(request, pk):
+    try:
+        video = PublisherVideo.objects.get(pk=pk)
+        video.views += 1
+        video.save(update_fields=['views'])
+        return Response(PublisherVideoSerializer(video).data)
+    except PublisherVideo.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_publishers(request):
+    publishers = User.objects.filter(profile__role='publisher').order_by('username')
+    data = []
+    for p in publishers:
+        video_count = p.videos.count()
+        data.append({
+            'id': p.id,
+            'username': p.username,
+            'first_name': p.first_name,
+            'last_name': p.last_name,
+            'publisher_id': getattr(p.profile, 'publisher_id', None),
+            'bio': getattr(p.profile, 'bio', ''),
+            'website': getattr(p.profile, 'website', ''),
+            'social_link': getattr(p.profile, 'social_link', ''),
+            'video_count': video_count,
+        })
+    return Response(data)
 
 
 # ===== ADMIN VIEWS =====
