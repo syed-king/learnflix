@@ -1,36 +1,46 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Content, Category, Subscription, SubscriptionPlan, Review, UserProfile
+from .models import Content, Category, Subscription, SubscriptionPlan, Review, UserProfile, LiveStream, PublisherVideo
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['avatar', 'bio', 'phone']
+        fields = ['avatar', 'bio', 'phone', 'role', 'publisher_id', 'website', 'social_link']
 
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(read_only=True)
     has_active_subscription = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'date_joined', 'profile', 'has_active_subscription']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff',
+                  'date_joined', 'profile', 'has_active_subscription', 'role']
 
     def get_has_active_subscription(self, obj):
         return obj.subscriptions.filter(status='active').exists()
 
+    def get_role(self, obj):
+        try:
+            return obj.profile.role
+        except:
+            return 'viewer'
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
+    role = serializers.ChoiceField(choices=['viewer', 'publisher'], default='viewer', write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name']
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'role']
 
     def create(self, validated_data):
+        role = validated_data.pop('role', 'viewer')
         user = User.objects.create_user(**validated_data)
-        UserProfile.objects.create(user=user)
+        UserProfile.objects.create(user=user, role=role)
         return user
 
 
@@ -81,3 +91,31 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'username', 'email', 'plan', 'plan_name', 'plan_price',
                   'status', 'start_date', 'end_date', 'created_at']
         read_only_fields = ['user']
+
+
+class LiveStreamSerializer(serializers.ModelSerializer):
+    publisher_name = serializers.CharField(source='publisher.username', read_only=True)
+    publisher_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LiveStream
+        fields = ['id', 'publisher', 'publisher_name', 'publisher_id', 'title', 'description',
+                  'stream_key', 'stream_url', 'status', 'viewer_count', 'started_at', 'ended_at', 'created_at']
+        read_only_fields = ['publisher', 'stream_key']
+
+    def get_publisher_id(self, obj):
+        try:
+            return obj.publisher.profile.publisher_id
+        except:
+            return None
+
+
+class PublisherVideoSerializer(serializers.ModelSerializer):
+    publisher_name = serializers.CharField(source='publisher.username', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+
+    class Meta:
+        model = PublisherVideo
+        fields = ['id', 'publisher', 'publisher_name', 'title', 'description', 'video_url',
+                  'thumbnail', 'category', 'category_name', 'is_premium', 'views', 'created_at']
+        read_only_fields = ['publisher', 'views']

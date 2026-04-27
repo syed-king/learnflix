@@ -17,6 +17,16 @@ urlpatterns = [
     path('subscribe/', views.subscribe, name='subscribe'),
     path('my-subscription/', views.my_subscription, name='my-subscription'),
 
+    # Publisher
+    path('publisher/videos/', views.publisher_videos, name='publisher-videos'),
+    path('publisher/videos/<int:pk>/', views.publisher_video_detail, name='publisher-video-detail'),
+    path('publisher/streams/', views.my_streams, name='my-streams'),
+    path('publisher/streams/control/<int:pk>/', views.stream_control, name='stream-control'),
+
+    # Viewer
+    path('live/', views.live_streams, name='live-streams'),
+    path('videos/', views.all_publisher_videos, name='all-videos'),
+
     # Admin
     path('admin/users/', views.admin_users, name='admin-users'),
     path('admin/subscriptions/', views.admin_subscriptions, name='admin-subscriptions'),

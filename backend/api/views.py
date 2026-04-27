@@ -6,10 +6,17 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
-from .models import Content, Category, Subscription, SubscriptionPlan, Review, UserProfile
+from .models import Content, Category, Subscription, SubscriptionPlan, Review, UserProfile, LiveStream, PublisherVideo
 from .serializers import (UserSerializer, RegisterSerializer, ContentSerializer,
                            CategorySerializer, SubscriptionSerializer, SubscriptionPlanSerializer,
-                           ReviewSerializer, UserProfileSerializer)
+                           ReviewSerializer, UserProfileSerializer, LiveStreamSerializer, PublisherVideoSerializer)
+
+
+def is_publisher(user):
+    try:
+        return user.profile.role == 'publisher'
+    except:
+        return False
 
 
 @api_view(['POST'])
@@ -66,12 +73,6 @@ class ContentDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
 
-class ContentAdminViewSet(viewsets.ModelViewSet):
-    queryset = Content.objects.all()
-    serializer_class = ContentSerializer
-    permission_classes = [IsAdminUser]
-
-
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -108,7 +109,109 @@ def my_subscription(request):
     return Response({'status': 'none'})
 
 
-# Admin views
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_review(request, content_id):
+    try:
+        content = Content.objects.get(pk=content_id)
+    except Content.DoesNotExist:
+        return Response({'error': 'Content not found'}, status=404)
+    if not request.user.subscriptions.filter(status='active').exists():
+        return Response({'error': 'Subscription required'}, status=403)
+    review, created = Review.objects.update_or_create(
+        user=request.user, content=content,
+        defaults={'rating': request.data.get('rating'), 'comment': request.data.get('comment', '')}
+    )
+    return Response(ReviewSerializer(review).data, status=201 if created else 200)
+
+
+# ===== PUBLISHER VIEWS =====
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def publisher_videos(request):
+    if not is_publisher(request.user):
+        return Response({'error': 'Publisher access required'}, status=403)
+    if request.method == 'GET':
+        videos = PublisherVideo.objects.filter(publisher=request.user).order_by('-created_at')
+        return Response(PublisherVideoSerializer(videos, many=True).data)
+    serializer = PublisherVideoSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(publisher=request.user)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(['PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def publisher_video_detail(request, pk):
+    try:
+        video = PublisherVideo.objects.get(pk=pk, publisher=request.user)
+    except PublisherVideo.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+    if request.method == 'DELETE':
+        video.delete()
+        return Response(status=204)
+    serializer = PublisherVideoSerializer(video, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def live_streams(request):
+    if request.method == 'GET':
+        streams = LiveStream.objects.filter(status='live').order_by('-started_at')
+        return Response(LiveStreamSerializer(streams, many=True).data)
+    if not is_publisher(request.user):
+        return Response({'error': 'Publisher access required'}, status=403)
+    serializer = LiveStreamSerializer(data=request.data)
+    if serializer.is_valid():
+        stream = serializer.save(publisher=request.user)
+        return Response(LiveStreamSerializer(stream).data, status=201)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_streams(request):
+    if not is_publisher(request.user):
+        return Response({'error': 'Publisher access required'}, status=403)
+    streams = LiveStream.objects.filter(publisher=request.user).order_by('-created_at')
+    return Response(LiveStreamSerializer(streams, many=True).data)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def stream_control(request, pk):
+    if not is_publisher(request.user):
+        return Response({'error': 'Publisher access required'}, status=403)
+    try:
+        stream = LiveStream.objects.get(pk=pk, publisher=request.user)
+    except LiveStream.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+    action = request.data.get('action')
+    if action == 'go_live':
+        stream.status = 'live'
+        stream.started_at = timezone.now()
+    elif action == 'end':
+        stream.status = 'ended'
+        stream.ended_at = timezone.now()
+    stream.save()
+    return Response(LiveStreamSerializer(stream).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_publisher_videos(request):
+    videos = PublisherVideo.objects.all().order_by('-created_at')
+    return Response(PublisherVideoSerializer(videos, many=True).data)
+
+
+# ===== ADMIN VIEWS =====
+
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def admin_users(request):
@@ -140,22 +243,6 @@ def admin_subscription_update(request, pk):
     sub.status = new_status
     sub.save()
     return Response(SubscriptionSerializer(sub).data)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def add_review(request, content_id):
-    try:
-        content = Content.objects.get(pk=content_id)
-    except Content.DoesNotExist:
-        return Response({'error': 'Content not found'}, status=404)
-    if not request.user.subscriptions.filter(status='active').exists():
-        return Response({'error': 'Subscription required'}, status=403)
-    review, created = Review.objects.update_or_create(
-        user=request.user, content=content,
-        defaults={'rating': request.data.get('rating'), 'comment': request.data.get('comment', '')}
-    )
-    return Response(ReviewSerializer(review).data, status=201 if created else 200)
 
 
 @api_view(['GET'])
