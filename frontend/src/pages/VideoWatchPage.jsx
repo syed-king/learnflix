@@ -4,7 +4,7 @@ import api from '../api';
 import { useAuth } from '../AuthContext';
 import Navbar from '../components/Navbar';
 import SubscriptionModal from '../components/SubscriptionModal';
-import { ArrowLeft, Eye, Crown, Lock, Globe, Link } from 'lucide-react';
+import { ArrowLeft, Eye, Crown, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function VideoWatchPage() {
@@ -16,10 +16,28 @@ export default function VideoWatchPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/videos/${id}/`).then(r => setVideo(r.data)).catch(() => setVideo(null)).finally(() => setLoading(false));
+    api.get(`/videos/${id}/`).then(r => {
+      console.log('Video data:', r.data);
+      setVideo(r.data);
+    }).catch(err => {
+      console.error('Video fetch error:', err);
+      setVideo(null);
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const canWatch = video && (!video.is_premium || user?.has_active_subscription);
+
+  // Build full video URL
+  const getVideoUrl = () => {
+    if (!video) return null;
+    if (video.video_file) {
+      const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
+      return `${baseUrl}${video.video_file}`;
+    }
+    return video.video_url || null;
+  };
+
+  const videoUrl = getVideoUrl();
 
   if (loading) return <div className="page-loading"><div className="spinner-lg" /></div>;
   if (!video) return (
@@ -40,19 +58,27 @@ export default function VideoWatchPage() {
         {/* Video Player */}
         <div className="video-watch-main">
           {canWatch ? (
-            video.video_file ? (
-              <div className="video-player">
-                <video controls autoPlay style={{ width: '100%', height: '100%', borderRadius: '12px' }}>
-                  <source src={`${import.meta.env.VITE_API_URL?.replace('/api', '')}${video.video_file}`} />
-                  Your browser does not support video playback.
-                </video>
-              </div>
-            ) : video.video_url ? (
-              <div className="video-player">
-                <iframe src={video.video_url} title={video.title} allowFullScreen />
-              </div>
+            videoUrl ? (
+              video.video_file ? (
+                <div className="video-player">
+                  <video controls autoPlay style={{ width: '100%', height: '100%', borderRadius: '12px', background: '#000' }}>
+                    <source src={videoUrl} type="video/mp4" />
+                    <source src={videoUrl} type="video/webm" />
+                    <source src={videoUrl} type="video/ogg" />
+                    Your browser does not support video playback.
+                  </video>
+                </div>
+              ) : (
+                <div className="video-player">
+                  <iframe src={videoUrl} title={video.title} allowFullScreen allow="autoplay" />
+                </div>
+              )
             ) : (
-              <div className="watch-gate"><p style={{ color: 'var(--text2)' }}>No video source available.</p></div>
+              <div className="watch-gate">
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                  <p style={{ color: 'var(--text2)' }}>No video source available.</p>
+                </div>
+              </div>
             )
           ) : (
             <div className="watch-gate">
