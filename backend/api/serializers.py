@@ -113,9 +113,15 @@ class LiveStreamSerializer(serializers.ModelSerializer):
 class PublisherVideoSerializer(serializers.ModelSerializer):
     publisher_name = serializers.CharField(source='publisher.username', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    video_file = serializers.SerializerMethodField()
 
     class Meta:
         model = PublisherVideo
         fields = ['id', 'publisher', 'publisher_name', 'title', 'description', 'video_file',
                   'video_url', 'thumbnail', 'category', 'category_name', 'is_premium', 'views', 'created_at']
         read_only_fields = ['publisher', 'views']
+
+    def get_video_file(self, obj):
+        if obj.video_file:
+            return obj.video_file.url
+        return None

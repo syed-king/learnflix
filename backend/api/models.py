@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
 
 
 class Category(models.Model):
@@ -114,7 +115,7 @@ class PublisherVideo(models.Model):
     publisher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='videos')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    video_file = models.FileField(upload_to='pub_videos/', blank=True, null=True)
+    video_file = CloudinaryField('video', resource_type='video', blank=True, null=True)
     video_url = models.URLField(blank=True)
     thumbnail = models.ImageField(upload_to='pub_thumbnails/', blank=True, null=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)

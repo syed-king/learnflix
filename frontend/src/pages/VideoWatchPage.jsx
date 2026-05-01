@@ -33,16 +33,10 @@ export default function VideoWatchPage() {
   const getVideoUrl = () => {
     if (!video) return null;
     
+    // Cloudinary URLs come directly from video_file field
     if (video.video_file) {
-      // Get base URL from environment or default to localhost
-      let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      // Remove /api from the end
-      baseUrl = baseUrl.replace('/api', '');
-      
-      // video_file already starts with /media/ so just append it
-      const fullUrl = `${baseUrl}${video.video_file}`;
-      console.log('Constructed video URL:', fullUrl);
-      return fullUrl;
+      console.log('Using Cloudinary URL:', video.video_file);
+      return video.video_file;
     }
     
     if (video.video_url) {

@@ -2,6 +2,9 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
 import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,6 +19,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary_storage',
+    'cloudinary',
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -64,17 +69,17 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Cloudinary Configuration
+cloudinary.config(
+    cloud_name=config('CLOUDINARY_CLOUD_NAME', default=''),
+    api_key=config('CLOUDINARY_API_KEY', default=''),
+    api_secret=config('CLOUDINARY_API_SECRET', default=''),
+    secure=True
+)
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-# Serve media files with WhiteNoise in production
-WHITENOISE_AUTOREFRESH = True
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_MIMETYPES = {
-    '.mp4': 'video/mp4',
-    '.webm': 'video/webm',
-    '.ogg': 'video/ogg',
-}
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
