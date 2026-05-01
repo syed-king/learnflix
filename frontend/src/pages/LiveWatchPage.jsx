@@ -60,9 +60,12 @@ export default function LiveWatchPage() {
           <div className="watch-gate">
             <div style={{ textAlign: 'center', padding: '3rem' }}>
               <Radio size={64} color="#e50914" />
-              <h3 style={{ margin: '1rem 0 0.5rem' }}>Stream is Live!</h3>
-              <p style={{ color: 'var(--text2)' }}>The publisher is live but hasn't set a stream URL yet. They may be using OBS or other streaming software.</p>
-              <p style={{ color: 'var(--text3)', fontSize: '0.85rem', marginTop: '0.5rem' }}>Stream Key: <code>{stream.stream_key?.slice(0, 12)}...</code></p>
+              <h3 style={{ margin: '1rem 0 0.5rem' }}>Stream Setup Required</h3>
+              <p style={{ color: 'var(--text2)', marginBottom: '1rem' }}>The publisher needs to add a stream URL to make this viewable.</p>
+              <div style={{ background: 'var(--bg2)', padding: '1.5rem', borderRadius: '8px', textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
+                <p style={{ color: 'var(--text2)', fontSize: '0.9rem', marginBottom: '0.75rem' }}><strong>For Publishers:</strong></p>
+                <p style={{ color: 'var(--text3)', fontSize: '0.85rem', lineHeight: 1.6 }}>1. Go to YouTube Studio → Create → Go Live<br/>2. Copy your YouTube Live embed URL<br/>3. Paste it in your stream settings<br/><br/>Or use OBS with stream key: <code>{stream.stream_key?.slice(0, 12)}...</code></p>
+              </div>
             </div>
           </div>
         )}

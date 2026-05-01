@@ -381,6 +381,25 @@ export default function PublisherPage() {
                             <h3>{s.title}</h3>
                           </div>
                           <p>{s.description}</p>
+                          {s.status === 'scheduled' && (
+                            <div style={{ marginTop: '0.75rem' }}>
+                              <input 
+                                className="pub-input" 
+                                placeholder="Stream URL (YouTube Live embed, etc.)" 
+                                defaultValue={s.stream_url}
+                                onBlur={async (e) => {
+                                  if (e.target.value !== s.stream_url) {
+                                    try {
+                                      await api.put(`/publisher/streams/${s.id}/`, { stream_url: e.target.value });
+                                      toast.success('Stream URL updated');
+                                      const { data } = await api.get('/publisher/streams/');
+                                      setStreams(data);
+                                    } catch { toast.error('Failed to update'); }
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
                           <div className="stream-meta">
                             <span><Monitor size={12} /> Key: <code>{s.stream_key?.slice(0, 12)}...</code></span>
                             <span><Eye size={12} /> {s.viewer_count} viewers</span>

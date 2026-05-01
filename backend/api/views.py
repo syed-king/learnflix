@@ -228,6 +228,22 @@ def stream_control(request, pk):
     return Response(LiveStreamSerializer(stream).data)
 
 
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def stream_update(request, pk):
+    if not is_publisher(request.user):
+        return Response({'error': 'Publisher access required'}, status=403)
+    try:
+        stream = LiveStream.objects.get(pk=pk, publisher=request.user)
+    except LiveStream.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+    serializer = LiveStreamSerializer(stream, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=400)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_publisher_videos(request):

@@ -22,6 +22,7 @@ urlpatterns = [
     path('publisher/videos/', views.publisher_videos, name='publisher-videos'),
     path('publisher/videos/<int:pk>/', views.publisher_video_detail, name='publisher-video-detail'),
     path('publisher/streams/', views.my_streams, name='my-streams'),
+    path('publisher/streams/<int:pk>/', views.stream_update, name='stream-update'),
     path('publisher/streams/control/<int:pk>/', views.stream_control, name='stream-control'),
 
     # Viewer
