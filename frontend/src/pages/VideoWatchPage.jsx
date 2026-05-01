@@ -18,6 +18,8 @@ export default function VideoWatchPage() {
   useEffect(() => {
     api.get(`/videos/${id}/`).then(r => {
       console.log('Video data:', r.data);
+      console.log('video_file:', r.data.video_file);
+      console.log('video_url:', r.data.video_url);
       setVideo(r.data);
     }).catch(err => {
       console.error('Video fetch error:', err);
@@ -30,14 +32,29 @@ export default function VideoWatchPage() {
   // Build full video URL
   const getVideoUrl = () => {
     if (!video) return null;
+    
     if (video.video_file) {
-      const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
-      return `${baseUrl}${video.video_file}`;
+      // Get base URL from environment or default to localhost
+      let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      // Remove /api from the end
+      baseUrl = baseUrl.replace('/api', '');
+      
+      // video_file already starts with /media/ so just append it
+      const fullUrl = `${baseUrl}${video.video_file}`;
+      console.log('Constructed video URL:', fullUrl);
+      return fullUrl;
     }
-    return video.video_url || null;
+    
+    if (video.video_url) {
+      console.log('Using video_url:', video.video_url);
+      return video.video_url;
+    }
+    
+    return null;
   };
 
   const videoUrl = getVideoUrl();
+  console.log('Final videoUrl:', videoUrl);
 
   if (loading) return <div className="page-loading"><div className="spinner-lg" /></div>;
   if (!video) return (
@@ -61,22 +78,47 @@ export default function VideoWatchPage() {
             videoUrl ? (
               video.video_file ? (
                 <div className="video-player">
-                  <video controls autoPlay style={{ width: '100%', height: '100%', borderRadius: '12px', background: '#000' }}>
+                  <video 
+                    controls 
+                    autoPlay 
+                    style={{ width: '100%', height: '100%', borderRadius: '12px', background: '#000' }}
+                    onError={(e) => {
+                      console.error('Video playback error:', e);
+                      console.error('Video src:', e.target.src);
+                      console.error('Video error code:', e.target.error?.code);
+                      console.error('Video error message:', e.target.error?.message);
+                    }}
+                    onLoadStart={() => console.log('Video loading started')}
+                    onCanPlay={() => console.log('Video can play')}
+                  >
                     <source src={videoUrl} type="video/mp4" />
                     <source src={videoUrl} type="video/webm" />
                     <source src={videoUrl} type="video/ogg" />
                     Your browser does not support video playback.
                   </video>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text3)' }}>
+                    Debug: Video URL = {videoUrl}
+                  </div>
                 </div>
               ) : (
                 <div className="video-player">
-                  <iframe src={videoUrl} title={video.title} allowFullScreen allow="autoplay" />
+                  <iframe 
+                    src={videoUrl} 
+                    title={video.title} 
+                    allowFullScreen 
+                    allow="autoplay"
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
                 </div>
               )
             ) : (
               <div className="watch-gate">
                 <div style={{ textAlign: 'center', padding: '3rem' }}>
                   <p style={{ color: 'var(--text2)' }}>No video source available.</p>
+                  <p style={{ color: 'var(--text3)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                    video_file: {video.video_file || 'null'}<br/>
+                    video_url: {video.video_url || 'null'}
+                  </p>
                 </div>
               </div>
             )
