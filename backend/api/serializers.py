@@ -113,7 +113,6 @@ class LiveStreamSerializer(serializers.ModelSerializer):
 class PublisherVideoSerializer(serializers.ModelSerializer):
     publisher_name = serializers.CharField(source='publisher.username', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
-    video_file = serializers.SerializerMethodField()
 
     class Meta:
         model = PublisherVideo
@@ -121,7 +120,8 @@ class PublisherVideoSerializer(serializers.ModelSerializer):
                   'video_url', 'thumbnail', 'category', 'category_name', 'is_premium', 'views', 'created_at']
         read_only_fields = ['publisher', 'views']
 
-    def get_video_file(self, obj):
-        if obj.video_file:
-            return obj.video_file.url
-        return None
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.video_file:
+            data['video_file'] = instance.video_file.url if hasattr(instance.video_file, 'url') else str(instance.video_file)
+        return data

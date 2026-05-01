@@ -114,20 +114,52 @@ function UploadVideoModal({ onClose, onUploaded }) {
     e.preventDefault();
     if (!file) return toast.error('Please select a video file');
     setUploading(true);
-    const fd = new FormData();
-    fd.append('title', form.title);
-    fd.append('description', form.description);
-    fd.append('is_premium', form.is_premium);
-    fd.append('video_file', file);
+    
     try {
-      const { data } = await api.post('/publisher/videos/', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: e => setProgress(Math.round((e.loaded * 100) / e.total)),
+      // Get Cloudinary signature
+      const { data: sig } = await api.get('/publisher/cloudinary-signature/');
+      
+      // Upload directly to Cloudinary
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', sig.upload_preset);
+      fd.append('timestamp', sig.timestamp);
+      fd.append('signature', sig.signature);
+      fd.append('api_key', sig.api_key);
+      fd.append('folder', 'pub_videos');
+      
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) setProgress(Math.round((e.loaded * 100) / e.total));
       });
+      
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${sig.cloud_name}/video/upload`;
+      
+      const uploadPromise = new Promise((resolve, reject) => {
+        xhr.onload = () => xhr.status === 200 ? resolve(JSON.parse(xhr.responseText)) : reject();
+        xhr.onerror = reject;
+        xhr.open('POST', cloudinaryUrl);
+        xhr.send(fd);
+      });
+      
+      const cloudinaryRes = await uploadPromise;
+      
+      // Save video metadata to backend
+      const { data } = await api.post('/publisher/videos/', {
+        title: form.title,
+        description: form.description,
+        is_premium: form.is_premium,
+        video_file: cloudinaryRes.secure_url
+      });
+      
       onUploaded(data);
       toast.success('Video uploaded!');
-    } catch { toast.error('Upload failed'); }
-    finally { setUploading(false); }
+    } catch (err) {
+      console.error(err);
+      toast.error('Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (

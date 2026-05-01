@@ -18,6 +18,7 @@ urlpatterns = [
     path('my-subscription/', views.my_subscription, name='my-subscription'),
 
     # Publisher
+    path('publisher/cloudinary-signature/', views.cloudinary_signature, name='cloudinary-signature'),
     path('publisher/videos/', views.publisher_videos, name='publisher-videos'),
     path('publisher/videos/<int:pk>/', views.publisher_video_detail, name='publisher-video-detail'),
     path('publisher/streams/', views.my_streams, name='my-streams'),

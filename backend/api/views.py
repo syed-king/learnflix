@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+import cloudinary.uploader
+from django.conf import settings
 from .models import Content, Category, Subscription, SubscriptionPlan, Review, UserProfile, LiveStream, PublisherVideo
 from .serializers import (UserSerializer, RegisterSerializer, ContentSerializer,
                            CategorySerializer, SubscriptionSerializer, SubscriptionPlanSerializer,
@@ -126,6 +128,29 @@ def add_review(request, content_id):
 
 
 # ===== PUBLISHER VIEWS =====
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cloudinary_signature(request):
+    if not is_publisher(request.user):
+        return Response({'error': 'Publisher access required'}, status=403)
+    
+    timestamp = int(timezone.now().timestamp())
+    params_to_sign = {
+        'timestamp': timestamp,
+        'upload_preset': 'learnflix_videos',
+        'folder': 'pub_videos'
+    }
+    
+    signature = cloudinary.utils.api_sign_request(params_to_sign, settings.CLOUDINARY_API_SECRET)
+    
+    return Response({
+        'signature': signature,
+        'timestamp': timestamp,
+        'cloud_name': settings.CLOUDINARY_CLOUD_NAME,
+        'api_key': settings.CLOUDINARY_API_KEY,
+        'upload_preset': 'learnflix_videos'
+    })
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
