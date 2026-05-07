@@ -1,49 +1,51 @@
 # Live Streaming Setup Guide
 
-## Option 1: YouTube Live (Easiest - Free)
+## Real-Time Camera/Mic Streaming with Agora
 
-### For Publishers:
-1. Go to [YouTube Studio](https://studio.youtube.com)
-2. Click **Create** → **Go Live**
-3. Choose **Stream** option
-4. Copy the **Stream URL** (looks like: `https://www.youtube.com/embed/live_stream?channel=YOUR_CHANNEL_ID`)
-5. In LearnFlix Publisher Dashboard:
-   - Create a new stream
-   - Paste the YouTube embed URL in the "Stream URL" field
-   - Click "Go Live"
+LearnFlix uses **Agora.io** for real-time video streaming where publishers can turn on their camera/mic and viewers watch instantly.
 
-### For Viewers:
-- They'll see your YouTube live stream embedded in LearnFlix
+### Setup Steps:
 
----
+#### 1. Sign Up for Agora (Free)
+1. Go to: https://console.agora.io/
+2. Sign up (free tier: 10,000 minutes/month)
+3. Create a new project
+4. Get your **App ID** from the project dashboard
 
-## Option 2: OBS Studio (Advanced)
+#### 2. Add to Environment Variables
 
-### Setup:
-1. Download [OBS Studio](https://obsproject.com/)
-2. In LearnFlix, create a stream and copy your **Stream Key**
-3. In OBS:
-   - Settings → Stream
-   - Service: Custom
-   - Server: `rtmp://your-streaming-server.com/live`
-   - Stream Key: Paste your LearnFlix stream key
-4. Start streaming in OBS
+**Frontend (Vercel):**
+- Go to Vercel Dashboard → Your Project → Settings → Environment Variables
+- Add: `VITE_AGORA_APP_ID` = `your_agora_app_id`
+- Redeploy
 
-**Note:** This requires a separate RTMP server (not included in free tier)
+**Local Development:**
+- Create `frontend/.env`
+- Add: `VITE_AGORA_APP_ID=your_agora_app_id`
 
----
+#### 3. How It Works
 
-## Option 3: Twitch Integration
+**For Publishers:**
+1. Go to Publisher Dashboard → Live Streams
+2. Create a new stream
+3. Click "Go Live"
+4. Allow camera/mic permissions
+5. You're now broadcasting live!
 
-1. Go to [Twitch Dashboard](https://dashboard.twitch.tv)
-2. Copy your Twitch embed URL
-3. Paste in LearnFlix stream URL field
-4. Go live on Twitch
+**For Viewers:**
+1. Go to Home → Live tab
+2. Click any live stream
+3. Watch the publisher's camera/mic in real-time
 
----
+### Features:
+- ✅ Real-time video & audio streaming
+- ✅ No external software needed (OBS not required)
+- ✅ Works directly in browser
+- ✅ Low latency (~300ms)
+- ✅ Free tier: 10,000 minutes/month
+- ✅ Automatic quality adjustment
 
-## Recommended: YouTube Live
-- ✅ Free
-- ✅ No setup required
-- ✅ Reliable streaming
-- ✅ Works with LearnFlix embed
+### Troubleshooting:
+- **Camera not working?** Check browser permissions
+- **No video showing?** Make sure Agora App ID is set correctly
+- **Viewers can't see?** Ensure publisher clicked "Go Live"

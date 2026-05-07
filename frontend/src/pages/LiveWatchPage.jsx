@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 import Navbar from '../components/Navbar';
 import { ArrowLeft, Eye, Radio } from 'lucide-react';
+import AgoraViewer from '../components/AgoraViewer';
 
 export default function LiveWatchPage() {
   const { id } = useParams();
@@ -46,29 +47,7 @@ export default function LiveWatchPage() {
           {stream.publisher_id && <span>Publisher ID: <code style={{ color: '#e50914' }}>{stream.publisher_id}</code></span>}
         </div>
         
-        {stream.stream_url ? (
-          <div className="video-player">
-            <iframe 
-              src={stream.stream_url} 
-              title={stream.title} 
-              allowFullScreen 
-              allow="autoplay; camera; microphone; fullscreen"
-              style={{ width: '100%', height: '100%', border: 'none' }}
-            />
-          </div>
-        ) : (
-          <div className="watch-gate">
-            <div style={{ textAlign: 'center', padding: '3rem' }}>
-              <Radio size={64} color="#e50914" />
-              <h3 style={{ margin: '1rem 0 0.5rem' }}>Stream Setup Required</h3>
-              <p style={{ color: 'var(--text2)', marginBottom: '1rem' }}>The publisher needs to add a stream URL to make this viewable.</p>
-              <div style={{ background: 'var(--bg2)', padding: '1.5rem', borderRadius: '8px', textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
-                <p style={{ color: 'var(--text2)', fontSize: '0.9rem', marginBottom: '0.75rem' }}><strong>For Publishers:</strong></p>
-                <p style={{ color: 'var(--text3)', fontSize: '0.85rem', lineHeight: 1.6 }}>1. Go to YouTube Studio → Create → Go Live<br/>2. Copy your YouTube Live embed URL<br/>3. Paste it in your stream settings<br/><br/>Or use OBS with stream key: <code>{stream.stream_key?.slice(0, 12)}...</code></p>
-              </div>
-            </div>
-          </div>
-        )}
+        <AgoraViewer stream={stream} />
         
         {stream.description && <p style={{ marginTop: '1.5rem', color: 'var(--text2)', lineHeight: 1.7 }}>{stream.description}</p>}
       </div>

@@ -4,6 +4,7 @@ import { useAuth } from '../AuthContext';
 import Navbar from '../components/Navbar';
 import toast from 'react-hot-toast';
 import { Upload, Radio, Settings, Plus, Trash2, Play, Eye, X, Save, Crown, Camera, Mic, MicOff, VideoOff, Monitor, StopCircle } from 'lucide-react';
+import AgoraLiveStudio from '../components/AgoraLiveStudio';
 
 // ── Live Studio Component ──────────────────────────────────────────────────
 function LiveStudio({ stream, onEnd }) {
@@ -13,10 +14,14 @@ function LiveStudio({ stream, onEnd }) {
   const [micOn, setMicOn] = useState(true);
   const [permError, setPermError] = useState('');
   const [duration, setDuration] = useState(0);
+  const [viewerCount, setViewerCount] = useState(0);
 
   useEffect(() => {
     startMedia();
-    return () => stopMedia();
+    const interval = setInterval(() => {
+      api.get(`/publisher/streams/${stream.id}/`).then(r => setViewerCount(r.data.viewer_count)).catch(() => {});
+    }, 5000);
+    return () => { stopMedia(); clearInterval(interval); };
   }, []);
 
   useEffect(() => {
@@ -64,6 +69,9 @@ function LiveStudio({ stream, onEnd }) {
       <div className="studio-header">
         <div className="studio-live-badge">🔴 LIVE — {fmt(duration)}</div>
         <h2>{stream.title}</h2>
+        <div style={{ color: 'var(--text2)', fontSize: '0.9rem' }}>
+          <Eye size={16} style={{ verticalAlign: 'middle' }} /> {viewerCount} watching
+        </div>
       </div>
       <div className="studio-main">
         <div className="studio-preview">
@@ -88,10 +96,11 @@ function LiveStudio({ stream, onEnd }) {
             </button>
           </div>
           <div className="studio-info-box">
-            <p><strong>Stream Key:</strong></p>
-            <code>{stream.stream_key}</code>
-            <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text3)' }}>
-              Use OBS or any streaming software with this key to broadcast to your audience.
+            <p style={{ fontSize: '0.85rem', color: 'var(--text2)' }}>
+              Your camera and microphone are active. Viewers can see and hear you in real-time.
+            </p>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text3)' }}>
+              Channel: <code>{stream.stream_key?.slice(0, 16)}</code>
             </p>
           </div>
           <button className="btn-end" style={{ width: '100%', justifyContent: 'center', marginTop: '1rem' }} onClick={() => { stopMedia(); onEnd(); }}>
@@ -360,7 +369,7 @@ export default function PublisherPage() {
           {tab === 'live' && (
             <div>
               {activeStudio ? (
-                <LiveStudio stream={activeStudio} onEnd={endStream} />
+                <AgoraLiveStudio stream={activeStudio} onEnd={endStream} />
               ) : (
                 <>
                   <div className="pub-header">
