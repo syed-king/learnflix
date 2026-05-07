@@ -33,8 +33,12 @@ export default function AgoraLiveStudio({ stream, onEnd }) {
 
   const joinChannel = async () => {
     try {
+      console.log('Agora App ID:', APP_ID);
+      console.log('Stream Key:', stream.stream_key);
+      console.log('Setting client role to host...');
       await client.setClientRole('host');
       
+      console.log('Creating camera and microphone tracks...');
       // Create local tracks
       const videoTrack = await AgoraRTC.createCameraVideoTrack();
       const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
@@ -47,17 +51,21 @@ export default function AgoraLiveStudio({ stream, onEnd }) {
         videoTrack.play(videoRef.current);
       }
       
+      console.log('Joining channel...');
       // Join channel (use stream_key as channel name)
       await client.join(APP_ID, stream.stream_key, null, null);
+      console.log('Successfully joined channel!');
       
+      console.log('Publishing tracks...');
       // Publish tracks
       await client.publish([videoTrack, audioTrack]);
+      console.log('Successfully published tracks!');
       
       setJoined(true);
       toast.success('Live stream started!');
     } catch (err) {
       console.error('Failed to join:', err);
-      toast.error('Failed to start stream. Check camera/mic permissions.');
+      toast.error('Failed to start stream: ' + err.message);
     }
   };
 
