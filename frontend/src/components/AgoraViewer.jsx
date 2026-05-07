@@ -10,6 +10,7 @@ export default function AgoraViewer({ stream }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const videoContainerRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     console.log('Agora App ID:', APP_ID);
@@ -21,14 +22,19 @@ export default function AgoraViewer({ stream }) {
       await client.subscribe(user, mediaType);
       
       if (mediaType === 'video') {
-        setRemoteUsers(prev => [...prev.filter(u => u.uid !== user.uid), user]);
-        const playerContainer = document.createElement('div');
-        playerContainer.id = `player-${user.uid}`;
-        playerContainer.style.width = '100%';
-        playerContainer.style.height = '100%';
-        videoContainerRef.current?.appendChild(playerContainer);
-        user.videoTrack?.play(playerContainer);
-        console.log('Playing video for user:', user.uid);
+        setRemoteUsers(prev => {
+          const filtered = prev.filter(u => u.uid !== user.uid);
+          return [...filtered, user];
+        });
+        setIsPlaying(true);
+        
+        // Wait for container to be ready
+        setTimeout(() => {
+          if (videoContainerRef.current) {
+            user.videoTrack?.play(videoContainerRef.current);
+            console.log('Playing video for user:', user.uid);
+          }
+        }, 100);
       }
       
       if (mediaType === 'audio') {
@@ -37,11 +43,14 @@ export default function AgoraViewer({ stream }) {
       }
     });
 
-    client.on('user-unpublished', (user) => {
-      console.log('User unpublished:', user.uid);
-      setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-      const playerContainer = document.getElementById(`player-${user.uid}`);
-      playerContainer?.remove();
+    client.on('user-unpublished', (user, mediaType) => {
+      console.log('User unpublished:', user.uid, mediaType);
+      if (mediaType === 'video') {
+        setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
+        if (remoteUsers.length <= 1) {
+          setIsPlaying(false);
+        }
+      }
     });
 
     return () => {
@@ -88,7 +97,7 @@ export default function AgoraViewer({ stream }) {
     );
   }
 
-  if (remoteUsers.length === 0) {
+  if (remoteUsers.length === 0 && !isPlaying) {
     return (
       <div className="video-player" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
         <div style={{ textAlign: 'center' }}>
@@ -102,8 +111,17 @@ export default function AgoraViewer({ stream }) {
   }
 
   return (
-    <div className="video-player" style={{ background: '#000' }}>
-      <div ref={videoContainerRef} style={{ width: '100%', height: '100%' }} />
+    <div className="video-player" style={{ background: '#000', position: 'relative' }}>
+      <div 
+        ref={videoContainerRef} 
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }} 
+      />
     </div>
   );
 }
