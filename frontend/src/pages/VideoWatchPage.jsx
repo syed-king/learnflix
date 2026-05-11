@@ -25,7 +25,6 @@ export default function VideoWatchPage() {
 
   const canWatch = video && (!video.is_premium || user?.has_active_subscription);
 
-  // Build full video URL
   const getVideoUrl = () => {
     if (!video) return null;
     if (video.video_file) return video.video_file;
@@ -40,6 +39,8 @@ export default function VideoWatchPage() {
       <button className="btn-ghost" onClick={() => navigate('/home')}>Go Back</button>
     </div>
   );
+
+  const videoUrl = getVideoUrl();
 
   return (
     <div className="content-page">
