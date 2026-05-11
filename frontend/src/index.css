@@ -457,11 +457,11 @@ input, textarea { font-family: inherit; }
 .nf-home { min-height: 100vh; background: var(--bg); overflow-x: hidden; }
 
 /* ── Hero Banner ── */
-.nf-hero { position: relative; height: 85vh; min-height: 500px; display: flex; align-items: flex-end; overflow: hidden; }
+.nf-hero { position: relative; height: 80vh; min-height: 480px; max-height: 700px; display: flex; align-items: flex-end; overflow: hidden; }
 .nf-hero-bg { position: absolute; inset: 0; }
 .nf-hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .nf-hero-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, #1a0000 0%, #0d0d0d 60%, #000 100%); }
-.nf-hero-gradient { position: absolute; inset: 0; background: linear-gradient(to top, #0a0a0a 0%, rgba(10,10,10,0.6) 40%, rgba(10,10,10,0.1) 70%, transparent 100%), linear-gradient(to right, rgba(10,10,10,0.8) 0%, transparent 60%); }
+.nf-hero-gradient { position: absolute; inset: 0; background: linear-gradient(to top, #0a0a0a 0%, rgba(10,10,10,0.75) 35%, rgba(10,10,10,0.1) 65%, transparent 100%), linear-gradient(to right, rgba(10,10,10,0.85) 0%, transparent 60%); }
 .nf-hero-content { position: relative; z-index: 2; padding: 0 4rem 5rem; max-width: 650px; }
 .nf-hero-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.05; margin-bottom: 1rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.8); }
 .nf-hero-desc { font-size: 1rem; color: rgba(255,255,255,0.85); line-height: 1.6; margin-bottom: 1.75rem; text-shadow: 1px 1px 4px rgba(0,0,0,0.9); max-width: 500px; }
@@ -474,7 +474,7 @@ input, textarea { font-family: inherit; }
 .nf-mute-btn:hover { border-color: white; background: rgba(0,0,0,0.7); }
 
 /* ── Content Rows ── */
-.nf-rows { padding: 0 0 4rem; margin-top: -6rem; position: relative; z-index: 3; }
+.nf-rows { padding: 2rem 0 4rem; margin-top: 0; position: relative; z-index: 3; background: var(--bg); }
 .nf-row { margin-bottom: 2.5rem; }
 .nf-row-title { font-size: 1.2rem; font-weight: 700; padding: 0 4rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.6rem; color: #e5e5e5; }
 .nf-row-wrap { position: relative; }
