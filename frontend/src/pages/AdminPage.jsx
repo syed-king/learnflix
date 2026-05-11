@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../AuthContext';
-import { Users, CreditCard, Star, TrendingUp, Check, X, Trash2, LogOut } from 'lucide-react';
+import { Users, CreditCard, Star, TrendingUp, Check, X, Trash2, LogOut, Upload, Radio } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminPage() {
@@ -62,6 +62,15 @@ export default function AdminPage() {
             {item.icon} {item.label}
           </button>
         ))}
+        <div style={{ borderTop: '1px solid #222', marginTop: '1rem', paddingTop: '1rem' }}>
+          <p style={{ color: '#666', fontSize: '0.75rem', padding: '0 1rem', marginBottom: '0.5rem' }}>PUBLISHER TOOLS</p>
+          <button className="sidebar-btn" onClick={() => navigate('/publisher')}>
+            <Upload size={18} /> Upload Videos
+          </button>
+          <button className="sidebar-btn" onClick={() => navigate('/publisher')}>
+            <Radio size={18} /> Go Live
+          </button>
+        </div>
         <button className="sidebar-btn" style={{ marginTop: 'auto', color: '#e50914' }} onClick={() => { logout(); navigate('/'); }}>
           <LogOut size={18} /> Logout
         </button>
