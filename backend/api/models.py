@@ -93,6 +93,7 @@ class LiveStream(models.Model):
     publisher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='streams')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    thumbnail = models.URLField(blank=True, default='')
     stream_key = models.CharField(max_length=100, unique=True, blank=True)
     stream_url = models.URLField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
@@ -117,7 +118,7 @@ class PublisherVideo(models.Model):
     description = models.TextField(blank=True)
     video_file = CloudinaryField('video', resource_type='video', blank=True, null=True)
     video_url = models.URLField(blank=True)
-    thumbnail = models.ImageField(upload_to='pub_thumbnails/', blank=True, null=True)
+    thumbnail = models.URLField(blank=True, default='')  # Cloudinary image URL or auto-generated from video
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     is_premium = models.BooleanField(default=False)
     views = models.IntegerField(default=0)

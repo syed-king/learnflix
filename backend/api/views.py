@@ -138,9 +138,28 @@ def cloudinary_signature(request):
         'timestamp': timestamp,
         'folder': 'pub_videos'
     }
-    
     signature = cloudinary.utils.api_sign_request(params_to_sign, settings.CLOUDINARY_API_SECRET)
-    
+    return Response({
+        'signature': signature,
+        'timestamp': timestamp,
+        'cloud_name': settings.CLOUDINARY_CLOUD_NAME,
+        'api_key': settings.CLOUDINARY_API_KEY,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cloudinary_image_signature(request):
+    if not is_publisher(request.user):
+        return Response({'error': 'Publisher access required'}, status=403)
+
+    import cloudinary.utils
+    timestamp = int(timezone.now().timestamp())
+    params_to_sign = {
+        'timestamp': timestamp,
+        'folder': 'pub_thumbnails'
+    }
+    signature = cloudinary.utils.api_sign_request(params_to_sign, settings.CLOUDINARY_API_SECRET)
     return Response({
         'signature': signature,
         'timestamp': timestamp,

@@ -98,7 +98,8 @@ class LiveStreamSerializer(serializers.ModelSerializer):
     class Meta:
         model = LiveStream
         fields = ['id', 'publisher', 'publisher_name', 'publisher_id', 'title', 'description',
-                  'stream_key', 'stream_url', 'status', 'viewer_count', 'started_at', 'ended_at', 'created_at']
+                  'thumbnail', 'stream_key', 'stream_url', 'status', 'viewer_count',
+                  'started_at', 'ended_at', 'created_at']
         read_only_fields = ['publisher', 'stream_key']
 
     def get_publisher_id(self, obj):
@@ -120,6 +121,21 @@ class PublisherVideoSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        # Resolve Cloudinary video URL
         if instance.video_file:
             data['video_file'] = instance.video_file.url if hasattr(instance.video_file, 'url') else str(instance.video_file)
+        # Auto-generate middle-frame thumbnail from Cloudinary video if no thumbnail set
+        if not instance.thumbnail and instance.video_file:
+            try:
+                video_url = data['video_file']
+                # Convert video URL to image thumbnail at 50% duration
+                # Cloudinary format: .../video/upload/... -> .../video/upload/so_50p/...jpg
+                thumb_url = video_url.replace('/video/upload/', '/video/upload/so_50p,w_640,h_360,c_fill,f_jpg/')
+                # Change extension to .jpg
+                if '.' in thumb_url.split('/')[-1]:
+                    base = thumb_url.rsplit('.', 1)[0]
+                    thumb_url = base + '.jpg'
+                data['thumbnail'] = thumb_url
+            except Exception:
+                pass
         return data
