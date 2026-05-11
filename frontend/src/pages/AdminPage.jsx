@@ -2,23 +2,110 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../AuthContext';
-import { Users, CreditCard, Star, TrendingUp, Check, X, Trash2, LogOut, Upload, Radio, Plus, Play, Eye, Crown, Camera, Monitor } from 'lucide-react';
+import {
+  Users, CreditCard, Star, TrendingUp, Check, X, Trash2, LogOut,
+  Upload, Radio, Plus, Play, Eye, Crown, Camera, Monitor, Image
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import AgoraLiveStudio from '../components/AgoraLiveStudio';
 
-// Upload Video Modal
+// ── Shared: upload an image to Cloudinary and return its URL ──────────────
+async function uploadImageToCloudinary(imageFile) {
+  const { data: sig } = await api.get('/publisher/cloudinary-image-signature/');
+  const fd = new FormData();
+  fd.append('file', imageFile);
+  fd.append('timestamp', sig.timestamp);
+  fd.append('signature', sig.signature);
+  fd.append('api_key', sig.api_key);
+  fd.append('folder', 'pub_thumbnails');
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/image/upload`, {
+    method: 'POST',
+    body: fd,
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err?.error?.message || 'Banner upload failed');
+  }
+  const data = await res.json();
+  return data.secure_url;
+}
+
+// ── Banner picker sub-component ───────────────────────────────────────────
+function BannerPicker({ banner, setBanner, label = 'Banner Image' }) {
+  const [preview, setPreview] = useState(null);
+
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setBanner(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
+  const clear = (e) => {
+    e.stopPropagation();
+    setBanner(null);
+    setPreview(null);
+  };
+
+  return (
+    <div>
+      <label style={{ fontSize: '0.8rem', color: 'var(--text2)', marginBottom: '0.4rem', display: 'block' }}>
+        {label} <span style={{ color: 'var(--text3)' }}>(optional — auto-generated if skipped)</span>
+      </label>
+      <div
+        className="banner-picker"
+        onClick={() => document.getElementById('banner-file-input').click()}
+        style={preview ? { backgroundImage: `url(${preview})` } : {}}
+      >
+        {preview ? (
+          <div className="banner-picker-overlay">
+            <span style={{ fontSize: '0.85rem', color: 'white' }}>Click to change</span>
+            <button className="banner-clear-btn" onClick={clear}><X size={14} /></button>
+          </div>
+        ) : (
+          <div className="banner-picker-empty">
+            <Image size={28} color="#555" />
+            <span>Click to add banner image</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>JPG, PNG, WEBP — 16:9 recommended</span>
+          </div>
+        )}
+        <input
+          id="banner-file-input"
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFile}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Upload Video Modal ────────────────────────────────────────────────────
 function UploadVideoModal({ onClose, onUploaded }) {
   const [form, setForm] = useState({ title: '', description: '', is_premium: false });
   const [file, setFile] = useState(null);
+  const [banner, setBanner] = useState(null);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState('');
 
   const submit = async e => {
     e.preventDefault();
     if (!file) return toast.error('Please select a video file');
     setUploading(true);
-    
+
     try {
+      // 1. Upload banner image if provided
+      let thumbnailUrl = '';
+      if (banner) {
+        setUploadStage('Uploading banner...');
+        thumbnailUrl = await uploadImageToCloudinary(banner);
+      }
+
+      // 2. Get video upload signature
+      setUploadStage('Uploading video...');
       const { data: sig } = await api.get('/publisher/cloudinary-signature/');
       const fd = new FormData();
       fd.append('file', file);
@@ -26,19 +113,17 @@ function UploadVideoModal({ onClose, onUploaded }) {
       fd.append('signature', sig.signature);
       fd.append('api_key', sig.api_key);
       fd.append('folder', 'pub_videos');
-      
+
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener('progress', e => {
         if (e.lengthComputable) setProgress(Math.round((e.loaded * 100) / e.total));
       });
-      
+
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${sig.cloud_name}/video/upload`;
-      
-      const uploadPromise = new Promise((resolve, reject) => {
+      const cloudinaryRes = await new Promise((resolve, reject) => {
         xhr.onload = () => {
-          if (xhr.status === 200) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
+          if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
+          else {
             const errBody = JSON.parse(xhr.responseText || '{}');
             reject(new Error(errBody?.error?.message || `Upload failed (${xhr.status})`));
           }
@@ -47,32 +132,44 @@ function UploadVideoModal({ onClose, onUploaded }) {
         xhr.open('POST', cloudinaryUrl);
         xhr.send(fd);
       });
-      
-      const cloudinaryRes = await uploadPromise;
-      const { data } = await api.post('/publisher/videos/', {
+
+      // 3. Save to backend
+      setUploadStage('Saving...');
+      const payload = {
         title: form.title,
         description: form.description,
         is_premium: form.is_premium,
-        video_file: cloudinaryRes.secure_url
-      });
-      
+        video_file: cloudinaryRes.secure_url,
+      };
+      if (thumbnailUrl) payload.thumbnail = thumbnailUrl;
+
+      const { data } = await api.post('/publisher/videos/', payload);
       onUploaded(data);
       toast.success('Video uploaded!');
     } catch (err) {
       toast.error(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+      setUploadStage('');
     }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}><X size={20} /></button>
         <h2 style={{ marginBottom: '1.5rem' }}>Upload Video</h2>
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <input className="pub-input" placeholder="Video Title" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
-          <textarea className="pub-input" placeholder="Description" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          <input
+            className="pub-input" placeholder="Video Title" required
+            value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+          />
+          <textarea
+            className="pub-input" placeholder="Description" rows={2}
+            value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+          />
+
+          {/* Video file picker */}
           <div className="file-drop-zone" onClick={() => document.getElementById('video-file-input').click()}>
             {file ? (
               <div className="file-selected">
@@ -87,20 +184,32 @@ function UploadVideoModal({ onClose, onUploaded }) {
                 <span>MP4, MOV, AVI, MKV supported</span>
               </>
             )}
-            <input id="video-file-input" type="file" accept="video/*" style={{ display: 'none' }} onChange={e => setFile(e.target.files[0])} />
+            <input
+              id="video-file-input" type="file" accept="video/*"
+              style={{ display: 'none' }} onChange={e => setFile(e.target.files[0])}
+            />
           </div>
+
+          {/* Banner picker */}
+          <BannerPicker banner={banner} setBanner={setBanner} label="Video Banner / Thumbnail" />
+
+          {/* Progress */}
           {uploading && (
             <div className="upload-progress">
-              <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text2)', marginBottom: '0.4rem' }}>{uploadStage}</div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${progress}%` }} />
+              </div>
               <span>{progress}%</span>
             </div>
           )}
+
           <label className="checkbox-label">
             <input type="checkbox" checked={form.is_premium} onChange={e => setForm({ ...form, is_premium: e.target.checked })} />
             Premium content (requires subscription)
           </label>
           <button type="submit" className="btn-primary" disabled={uploading}>
-            {uploading ? <><span className="spinner" /> Uploading {progress}%</> : <><Upload size={16} /> Upload Video</>}
+            {uploading ? <><span className="spinner" /> {uploadStage || 'Uploading...'}</> : <><Upload size={16} /> Upload Video</>}
           </button>
         </form>
       </div>
@@ -108,38 +217,65 @@ function UploadVideoModal({ onClose, onUploaded }) {
   );
 }
 
-// Create Stream Modal
+// ── Create Stream Modal ───────────────────────────────────────────────────
 function CreateStreamModal({ onClose, onCreate }) {
   const [form, setForm] = useState({ title: '', description: '' });
+  const [banner, setBanner] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const submit = async e => {
     e.preventDefault();
+    setSaving(true);
     try {
-      const { data } = await api.post('/live/', form);
+      let thumbnailUrl = '';
+      if (banner) {
+        thumbnailUrl = await uploadImageToCloudinary(banner);
+      }
+      const payload = { ...form };
+      if (thumbnailUrl) payload.thumbnail = thumbnailUrl;
+
+      const { data } = await api.post('/live/', payload);
       onCreate(data);
       toast.success('Stream created! Click Go Live to start.');
-    } catch { toast.error('Failed to create stream'); }
+    } catch (err) {
+      toast.error(err.message || 'Failed to create stream');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}><X size={20} /></button>
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <Radio size={36} color="#e50914" />
           <h2 style={{ marginTop: '0.75rem' }}>Create Live Stream</h2>
-          <p style={{ color: 'var(--text2)', fontSize: '0.9rem' }}>Set up your stream details before going live</p>
+          <p style={{ color: 'var(--text2)', fontSize: '0.9rem' }}>Set up your stream before going live</p>
         </div>
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <input className="pub-input" placeholder="Stream Title" required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
-          <textarea className="pub-input" placeholder="What will you be streaming about?" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-          <button type="submit" className="btn-primary"><Radio size={16} /> Create Stream</button>
+          <input
+            className="pub-input" placeholder="Stream Title" required
+            value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+          />
+          <textarea
+            className="pub-input" placeholder="What will you be streaming about?" rows={2}
+            value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+          />
+
+          {/* Banner picker */}
+          <BannerPicker banner={banner} setBanner={setBanner} label="Stream Banner" />
+
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? <><span className="spinner" /> Creating...</> : <><Radio size={16} /> Create Stream</>}
+          </button>
         </form>
       </div>
     </div>
   );
 }
 
+// ── Admin Page ────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -218,12 +354,12 @@ export default function AdminPage() {
           <span style={{ color: '#888', fontSize: '0.75rem', display: 'block' }}>Admin Panel</span>
         </div>
         {[
-          { key: 'dashboard', icon: <TrendingUp size={18} />, label: 'Dashboard' },
-          { key: 'users', icon: <Users size={18} />, label: 'Users' },
+          { key: 'dashboard',     icon: <TrendingUp size={18} />, label: 'Dashboard' },
+          { key: 'users',         icon: <Users size={18} />,      label: 'Users' },
           { key: 'subscriptions', icon: <CreditCard size={18} />, label: 'Subscriptions' },
-          { key: 'reviews', icon: <Star size={18} />, label: 'Reviews' },
-          { key: 'videos', icon: <Upload size={18} />, label: 'Videos' },
-          { key: 'live', icon: <Radio size={18} />, label: 'Live Streams', dot: activeStudio },
+          { key: 'reviews',       icon: <Star size={18} />,       label: 'Reviews' },
+          { key: 'videos',        icon: <Upload size={18} />,     label: 'Videos' },
+          { key: 'live',          icon: <Radio size={18} />,      label: 'Live Streams', dot: activeStudio },
         ].map(item => (
           <button key={item.key} className={`sidebar-btn ${tab === item.key ? 'active' : ''}`} onClick={() => setTab(item.key)}>
             {item.icon} {item.label}
@@ -236,6 +372,8 @@ export default function AdminPage() {
       </aside>
 
       <main className="admin-main">
+
+        {/* DASHBOARD */}
         {tab === 'dashboard' && (
           <div>
             <h1>Dashboard</h1>
@@ -250,6 +388,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* USERS */}
         {tab === 'users' && (
           <div>
             <h1>Users ({users.length})</h1>
@@ -262,7 +401,7 @@ export default function AdminPage() {
                       <td><strong>{u.username}</strong></td>
                       <td>{u.email}</td>
                       <td>{u.first_name} {u.last_name}</td>
-                      <td><span className={`badge ${u.is_staff ? 'admin' : ''}`}>{u.is_staff ? 'Admin' : 'User'}</span></td>
+                      <td><span className={`badge ${u.is_staff ? 'admin' : ''}`}>{u.is_staff ? 'Admin' : 'Viewer'}</span></td>
                       <td>{new Date(u.date_joined).toLocaleDateString()}</td>
                       <td><span className={`badge ${u.has_active_subscription ? 'active' : ''}`}>{u.has_active_subscription ? 'Active' : 'None'}</span></td>
                     </tr>
@@ -273,6 +412,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* SUBSCRIPTIONS */}
         {tab === 'subscriptions' && (
           <div>
             <div className="admin-header">
@@ -316,6 +456,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* REVIEWS */}
         {tab === 'reviews' && (
           <div>
             <h1>Reviews ({reviews.length})</h1>
@@ -339,6 +480,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* VIDEOS */}
         {tab === 'videos' && (
           <div>
             <div className="pub-header">
@@ -347,14 +489,19 @@ export default function AdminPage() {
                 <Plus size={16} /> Upload Video
               </button>
             </div>
-            {showVideoForm && <UploadVideoModal onClose={() => setShowVideoForm(false)} onUploaded={v => { setVideos([v, ...videos]); setShowVideoForm(false); }} />}
+            {showVideoForm && (
+              <UploadVideoModal
+                onClose={() => setShowVideoForm(false)}
+                onUploaded={v => { setVideos([v, ...videos]); setShowVideoForm(false); }}
+              />
+            )}
             <div className="videos-grid">
               {videos.length === 0 ? (
                 <div className="empty-state"><Upload size={48} /><p>No videos yet. Upload your first video!</p></div>
               ) : videos.map(v => (
                 <div key={v.id} className="video-card">
-                  <div className="video-thumb">
-                    <Play size={28} color="white" />
+                  <div className="video-thumb" style={v.thumbnail ? { backgroundImage: `url(${v.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+                    {!v.thumbnail && <Play size={28} color="white" />}
                     {v.is_premium && <span className="card-lock" style={{ position: 'absolute', bottom: 4, left: 4 }}><Crown size={10} /></span>}
                   </div>
                   <div className="video-info">
@@ -363,7 +510,7 @@ export default function AdminPage() {
                     <div className="video-meta">
                       <span><Eye size={12} /> {v.views} views</span>
                       <span>{new Date(v.created_at).toLocaleDateString()}</span>
-                      {v.video_file && <span style={{ color: '#22c55e' }}>✓ Uploaded</span>}
+                      {v.thumbnail ? <span style={{ color: '#22c55e' }}>✓ Banner</span> : <span style={{ color: 'var(--text3)' }}>Auto banner</span>}
                     </div>
                   </div>
                   <button className="icon-btn danger" onClick={() => deleteVideo(v.id)}><Trash2 size={16} /></button>
@@ -373,6 +520,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* LIVE */}
         {tab === 'live' && (
           <div>
             {activeStudio ? (
@@ -385,12 +533,21 @@ export default function AdminPage() {
                     <Plus size={16} /> New Stream
                   </button>
                 </div>
-                {showStreamForm && <CreateStreamModal onClose={() => setShowStreamForm(false)} onCreate={s => { setStreams([s, ...streams]); setShowStreamForm(false); }} />}
+                {showStreamForm && (
+                  <CreateStreamModal
+                    onClose={() => setShowStreamForm(false)}
+                    onCreate={s => { setStreams([s, ...streams]); setShowStreamForm(false); }}
+                  />
+                )}
                 <div className="streams-list">
                   {streams.length === 0 ? (
                     <div className="empty-state"><Radio size={48} /><p>No streams yet. Create your first live stream!</p></div>
                   ) : streams.map(s => (
                     <div key={s.id} className="stream-card">
+                      {/* Stream banner preview */}
+                      {s.thumbnail && (
+                        <div className="stream-banner-preview" style={{ backgroundImage: `url(${s.thumbnail})` }} />
+                      )}
                       <div className="stream-info">
                         <div className="stream-status-row">
                           <span className={`stream-status ${s.status}`}>{s.status === 'live' ? '🔴 LIVE' : s.status}</span>
