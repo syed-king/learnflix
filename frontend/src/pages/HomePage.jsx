@@ -7,12 +7,14 @@ import { Radio, Play, Eye, Crown, Users, ChevronRight } from 'lucide-react';
 export default function HomePage() {
   const [publishers, setPublishers] = useState([]);
   const [liveStreams, setLiveStreams] = useState([]);
+  const [videos, setVideos] = useState([]);
   const [tab, setTab] = useState('videos');
   const navigate = useNavigate();
 
   useEffect(() => {
     api.get('/publishers/').then(r => setPublishers(r.data)).catch(() => {});
     api.get('/live/').then(r => setLiveStreams(r.data)).catch(() => {});
+    api.get('/videos/').then(r => setVideos(r.data)).catch(() => {});
   }, []);
 
   return (
@@ -38,29 +40,36 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* VIDEOS TAB — Publishers list */}
+        {/* VIDEOS TAB — All videos */}
         {tab === 'videos' && (
           <div>
-            {publishers.length === 0 ? (
+            {videos.length === 0 ? (
               <div className="empty-state" style={{ margin: '4rem auto' }}>
-                <Users size={64} color="#e50914" />
-                <h2>No Publishers Yet</h2>
-                <p>Publishers will appear here once they sign up and upload videos.</p>
+                <Play size={64} color="#e50914" />
+                <h2>No Videos Yet</h2>
+                <p>Videos will appear here once publishers upload content.</p>
               </div>
             ) : (
-              <div className="publishers-list">
-                {publishers.map(p => (
-                  <div key={p.id} className="publisher-row" onClick={() => navigate(`/publisher/${p.id}`)}>
-                    <div className="publisher-row-avatar">{p.username[0].toUpperCase()}</div>
-                    <div className="publisher-row-info">
-                      <h3>{p.first_name || p.username} {p.last_name}</h3>
-                      <p>@{p.username} {p.publisher_id && <span className="pub-id-tag">{p.publisher_id}</span>}</p>
-                      {p.bio && <p className="pub-bio">{p.bio.slice(0, 80)}{p.bio.length > 80 ? '...' : ''}</p>}
+              <div className="content-grid">
+                {videos.map(v => (
+                  <div key={v.id} className="content-card" onClick={() => navigate(`/watch/${v.id}`)}>
+                    <div className="card-thumb" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)' }}>
+                      <span className="card-icon">🎬</span>
+                      <div className="card-overlay"><Play size={32} fill="white" color="white" /></div>
+                      {v.is_premium && <div className="card-lock"><Crown size={12} /> Premium</div>}
                     </div>
-                    <div className="publisher-row-meta">
-                      <span><Play size={14} /> {p.video_count} videos</span>
+                    <div className="card-info">
+                      <span className="card-type">Video</span>
+                      <h3>{v.title}</h3>
+                      <div className="publisher-name-row" style={{ margin: '0.25rem 0' }}>
+                        <div className="pub-avatar-sm">{v.publisher_name?.[0]?.toUpperCase()}</div>
+                        <span>{v.publisher_name}</span>
+                      </div>
+                      <div className="card-footer">
+                        <span><Eye size={12} /> {v.views} views</span>
+                        <span>{new Date(v.created_at).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    <ChevronRight size={20} color="#555" />
                   </div>
                 ))}
               </div>
