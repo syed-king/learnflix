@@ -449,3 +449,86 @@ input, textarea { font-family: inherit; }
   .viewer-hero-content h1 { font-size: 1.8rem; }
   .video-watch-body { padding: 1rem 1.5rem 3rem; }
 }
+
+
+/* ===== NETFLIX-STYLE HOME ===== */
+
+/* Page wrapper */
+.nf-home { min-height: 100vh; background: var(--bg); overflow-x: hidden; }
+
+/* ── Hero Banner ── */
+.nf-hero { position: relative; height: 85vh; min-height: 500px; display: flex; align-items: flex-end; overflow: hidden; }
+.nf-hero-bg { position: absolute; inset: 0; }
+.nf-hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.nf-hero-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, #1a0000 0%, #0d0d0d 60%, #000 100%); }
+.nf-hero-gradient { position: absolute; inset: 0; background: linear-gradient(to top, #0a0a0a 0%, rgba(10,10,10,0.6) 40%, rgba(10,10,10,0.1) 70%, transparent 100%), linear-gradient(to right, rgba(10,10,10,0.8) 0%, transparent 60%); }
+.nf-hero-content { position: relative; z-index: 2; padding: 0 4rem 5rem; max-width: 650px; }
+.nf-hero-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; line-height: 1.05; margin-bottom: 1rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.8); }
+.nf-hero-desc { font-size: 1rem; color: rgba(255,255,255,0.85); line-height: 1.6; margin-bottom: 1.75rem; text-shadow: 1px 1px 4px rgba(0,0,0,0.9); max-width: 500px; }
+.nf-hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.nf-btn-play { display: flex; align-items: center; gap: 0.6rem; background: white; color: black; padding: 0.7rem 1.8rem; border-radius: 6px; font-size: 1.05rem; font-weight: 700; transition: background 0.2s; }
+.nf-btn-play:hover { background: rgba(255,255,255,0.8); }
+.nf-btn-info { display: flex; align-items: center; gap: 0.6rem; background: rgba(109,109,110,0.7); color: white; padding: 0.7rem 1.8rem; border-radius: 6px; font-size: 1.05rem; font-weight: 700; backdrop-filter: blur(4px); transition: background 0.2s; }
+.nf-btn-info:hover { background: rgba(109,109,110,0.5); }
+.nf-mute-btn { position: absolute; bottom: 5rem; right: 4rem; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.4); color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.nf-mute-btn:hover { border-color: white; background: rgba(0,0,0,0.7); }
+
+/* ── Content Rows ── */
+.nf-rows { padding: 0 0 4rem; margin-top: -6rem; position: relative; z-index: 3; }
+.nf-row { margin-bottom: 2.5rem; }
+.nf-row-title { font-size: 1.2rem; font-weight: 700; padding: 0 4rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.6rem; color: #e5e5e5; }
+.nf-row-wrap { position: relative; }
+
+/* Scroll buttons */
+.nf-scroll-btn { position: absolute; top: 0; bottom: 0; z-index: 10; width: 60px; background: rgba(20,20,20,0.7); border: none; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+.nf-scroll-btn:hover { background: rgba(20,20,20,0.95); }
+.nf-scroll-btn.left { left: 0; border-radius: 0 4px 4px 0; }
+.nf-scroll-btn.right { right: 0; border-radius: 4px 0 0 4px; }
+
+/* Track */
+.nf-row-track { display: flex; gap: 4px; overflow-x: auto; padding: 0.5rem 4rem; scroll-behavior: smooth; scrollbar-width: none; }
+.nf-row-track::-webkit-scrollbar { display: none; }
+
+/* ── Cards ── */
+.nf-card { flex: 0 0 200px; cursor: pointer; border-radius: 4px; overflow: hidden; transition: transform 0.25s, z-index 0s 0.25s; position: relative; }
+.nf-card:hover { transform: scale(1.08); z-index: 5; transition: transform 0.25s, z-index 0s; }
+.nf-card:first-child:hover { transform-origin: left center; }
+.nf-card:last-child:hover { transform-origin: right center; }
+
+.nf-card-thumb { width: 100%; aspect-ratio: 16/9; background: var(--surface2); position: relative; overflow: hidden; }
+.nf-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+.nf-card:hover .nf-card-thumb img { transform: scale(1.05); }
+.nf-card-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; background: linear-gradient(135deg, #1a1a2e, #16213e); }
+
+/* Card hover overlay */
+.nf-card-hover { position: absolute; inset: 0; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; }
+.nf-card:hover .nf-card-hover { opacity: 1; }
+.nf-play-btn { width: 40px; height: 40px; border-radius: 50%; background: white; color: black; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+.nf-play-btn:hover { transform: scale(1.1); }
+.nf-premium-tag { position: absolute; top: 6px; right: 6px; background: rgba(245,197,24,0.9); color: black; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px; display: flex; align-items: center; gap: 0.2rem; }
+
+/* Card title */
+.nf-card-title { padding: 0.5rem 0.4rem 0.3rem; font-size: 0.8rem; font-weight: 500; color: #e5e5e5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--surface); }
+
+/* ── Live cards ── */
+.nf-live-card .nf-card-thumb { background: linear-gradient(135deg, #1a0000, #3d0000); }
+.nf-live-thumb .nf-live-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.nf-live-badge { position: absolute; top: 6px; left: 6px; background: var(--red); color: white; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 3px; animation: pulse 1.5s infinite; }
+.nf-live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); display: inline-block; animation: pulse 1.5s infinite; }
+
+/* ── Empty state ── */
+.nf-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 6rem 2rem; color: var(--text3); text-align: center; }
+.nf-empty h2 { color: var(--text2); font-size: 1.5rem; }
+.nf-empty p { font-size: 0.95rem; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .nf-hero-content { padding: 0 1.5rem 4rem; }
+  .nf-hero-title { font-size: 1.8rem; }
+  .nf-hero-desc { display: none; }
+  .nf-mute-btn { right: 1.5rem; bottom: 4rem; }
+  .nf-row-title { padding: 0 1.5rem; font-size: 1rem; }
+  .nf-row-track { padding: 0.5rem 1.5rem; }
+  .nf-card { flex: 0 0 140px; }
+  .nf-scroll-btn { width: 40px; }
+}
