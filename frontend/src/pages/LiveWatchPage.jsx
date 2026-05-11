@@ -13,13 +13,9 @@ export default function LiveWatchPage() {
 
   useEffect(() => {
     api.get('/live/').then(r => {
-      console.log('Live streams:', r.data);
       const s = r.data.find(s => String(s.id) === String(id));
-      console.log('Found stream:', s);
       setStream(s || null);
-    }).catch(err => {
-      console.error('Live fetch error:', err);
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <div className="page-loading"><div className="spinner-lg" /></div>;

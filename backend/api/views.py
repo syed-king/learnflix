@@ -138,7 +138,7 @@ def cloudinary_signature(request):
     timestamp = int(timezone.now().timestamp())
     params_to_sign = {
         'timestamp': timestamp,
-        'upload_preset': 'learnflix_videos',
+        'upload_preset': 'almiftah_videos',
         'folder': 'pub_videos'
     }
     
@@ -149,7 +149,7 @@ def cloudinary_signature(request):
         'timestamp': timestamp,
         'cloud_name': settings.CLOUDINARY_CLOUD_NAME,
         'api_key': settings.CLOUDINARY_API_KEY,
-        'upload_preset': 'learnflix_videos'
+        'upload_preset': 'almiftah_videos'
     })
 
 @api_view(['GET', 'POST'])
@@ -246,7 +246,10 @@ def stream_update(request, pk):
     if not is_publisher(request.user):
         return Response({'error': 'Publisher access required'}, status=403)
     try:
-        stream = LiveStream.objects.get(pk=pk, publisher=request.user)
+        if request.user.is_staff:
+            stream = LiveStream.objects.get(pk=pk)
+        else:
+            stream = LiveStream.objects.get(pk=pk, publisher=request.user)
     except LiveStream.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
     serializer = LiveStreamSerializer(stream, data=request.data, partial=True)
