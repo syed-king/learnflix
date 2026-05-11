@@ -16,9 +16,9 @@ from .serializers import (UserSerializer, RegisterSerializer, ContentSerializer,
 
 def is_publisher(user):
     try:
-        return user.profile.role == 'publisher'
+        return user.profile.role == 'publisher' or user.is_staff
     except:
-        return False
+        return user.is_staff
 
 
 @api_view(['POST'])
@@ -158,7 +158,10 @@ def publisher_videos(request):
     if not is_publisher(request.user):
         return Response({'error': 'Publisher access required'}, status=403)
     if request.method == 'GET':
-        videos = PublisherVideo.objects.filter(publisher=request.user).order_by('-created_at')
+        if request.user.is_staff:
+            videos = PublisherVideo.objects.all().order_by('-created_at')
+        else:
+            videos = PublisherVideo.objects.filter(publisher=request.user).order_by('-created_at')
         return Response(PublisherVideoSerializer(videos, many=True).data)
     serializer = PublisherVideoSerializer(data=request.data)
     if serializer.is_valid():
@@ -171,7 +174,10 @@ def publisher_videos(request):
 @permission_classes([IsAuthenticated])
 def publisher_video_detail(request, pk):
     try:
-        video = PublisherVideo.objects.get(pk=pk, publisher=request.user)
+        if request.user.is_staff:
+            video = PublisherVideo.objects.get(pk=pk)
+        else:
+            video = PublisherVideo.objects.get(pk=pk, publisher=request.user)
     except PublisherVideo.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
     if request.method == 'DELETE':
@@ -204,7 +210,10 @@ def live_streams(request):
 def my_streams(request):
     if not is_publisher(request.user):
         return Response({'error': 'Publisher access required'}, status=403)
-    streams = LiveStream.objects.filter(publisher=request.user).order_by('-created_at')
+    if request.user.is_staff:
+        streams = LiveStream.objects.all().order_by('-created_at')
+    else:
+        streams = LiveStream.objects.filter(publisher=request.user).order_by('-created_at')
     return Response(LiveStreamSerializer(streams, many=True).data)
 
 
@@ -214,7 +223,10 @@ def stream_control(request, pk):
     if not is_publisher(request.user):
         return Response({'error': 'Publisher access required'}, status=403)
     try:
-        stream = LiveStream.objects.get(pk=pk, publisher=request.user)
+        if request.user.is_staff:
+            stream = LiveStream.objects.get(pk=pk)
+        else:
+            stream = LiveStream.objects.get(pk=pk, publisher=request.user)
     except LiveStream.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
     action = request.data.get('action')
