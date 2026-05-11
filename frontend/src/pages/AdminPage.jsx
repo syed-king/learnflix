@@ -22,7 +22,6 @@ function UploadVideoModal({ onClose, onUploaded }) {
       const { data: sig } = await api.get('/publisher/cloudinary-signature/');
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('upload_preset', sig.upload_preset);
       fd.append('timestamp', sig.timestamp);
       fd.append('signature', sig.signature);
       fd.append('api_key', sig.api_key);
@@ -36,8 +35,15 @@ function UploadVideoModal({ onClose, onUploaded }) {
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${sig.cloud_name}/video/upload`;
       
       const uploadPromise = new Promise((resolve, reject) => {
-        xhr.onload = () => xhr.status === 200 ? resolve(JSON.parse(xhr.responseText)) : reject();
-        xhr.onerror = reject;
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            const errBody = JSON.parse(xhr.responseText || '{}');
+            reject(new Error(errBody?.error?.message || `Upload failed (${xhr.status})`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error during upload'));
         xhr.open('POST', cloudinaryUrl);
         xhr.send(fd);
       });
@@ -53,8 +59,7 @@ function UploadVideoModal({ onClose, onUploaded }) {
       onUploaded(data);
       toast.success('Video uploaded!');
     } catch (err) {
-      console.error(err);
-      toast.error('Upload failed');
+      toast.error(err.message || 'Upload failed');
     } finally {
       setUploading(false);
     }

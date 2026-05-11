@@ -135,10 +135,10 @@ def cloudinary_signature(request):
     if not is_publisher(request.user):
         return Response({'error': 'Publisher access required'}, status=403)
     
+    import cloudinary.utils
     timestamp = int(timezone.now().timestamp())
     params_to_sign = {
         'timestamp': timestamp,
-        'upload_preset': 'almiftah_videos',
         'folder': 'pub_videos'
     }
     
@@ -149,7 +149,6 @@ def cloudinary_signature(request):
         'timestamp': timestamp,
         'cloud_name': settings.CLOUDINARY_CLOUD_NAME,
         'api_key': settings.CLOUDINARY_API_KEY,
-        'upload_preset': 'almiftah_videos'
     })
 
 @api_view(['GET', 'POST'])
