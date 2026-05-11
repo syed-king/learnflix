@@ -31,16 +31,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
-    role = serializers.ChoiceField(choices=['viewer', 'publisher'], default='viewer', write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'role']
+        fields = ['username', 'email', 'password', 'first_name', 'last_name']
 
     def create(self, validated_data):
-        role = validated_data.pop('role', 'viewer')
         user = User.objects.create_user(**validated_data)
-        UserProfile.objects.create(user=user, role=role)
+        UserProfile.objects.create(user=user, role='viewer')
         return user
 
 

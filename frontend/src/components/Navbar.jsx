@@ -78,11 +78,6 @@ export default function Navbar() {
             <Shield size={14} /> Admin
           </Link>
         )}
-        {user?.role === 'publisher' && (
-          <Link to="/publisher" className={location.pathname === '/publisher' ? 'nav-link-active' : ''}>
-            Studio
-          </Link>
-        )}
       </div>
 
       {/* Right */}
@@ -141,7 +136,7 @@ export default function Navbar() {
                 <div>
                   <div className="nav-dropdown-name">{user?.first_name || user?.username}</div>
                   <div className="nav-dropdown-role">
-                    {user?.is_staff ? 'Administrator' : user?.role === 'publisher' ? 'Publisher' : 'Viewer'}
+                    {user?.is_staff ? 'Administrator' : 'Viewer'}
                   </div>
                 </div>
               </div>

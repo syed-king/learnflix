@@ -15,10 +15,7 @@ from .serializers import (UserSerializer, RegisterSerializer, ContentSerializer,
 
 
 def is_publisher(user):
-    try:
-        return user.profile.role == 'publisher' or user.is_staff
-    except:
-        return user.is_staff
+    return user.is_staff
 
 
 @api_view(['POST'])
