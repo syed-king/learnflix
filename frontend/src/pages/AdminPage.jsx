@@ -49,7 +49,7 @@ export default function AdminPage() {
     <div className="admin-page">
       <aside className="admin-sidebar">
         <div className="logo" style={{ padding: '1.5rem', borderBottom: '1px solid #222' }}>
-          <span style={{ color: '#e50914', fontSize: '1.4rem', fontWeight: 800 }}>LearnFlix</span>
+          <span style={{ color: '#e50914', fontSize: '1.4rem', fontWeight: 800 }}>Almiftah</span>
           <span style={{ color: '#888', fontSize: '0.75rem', display: 'block' }}>Admin Panel</span>
         </div>
         {[
