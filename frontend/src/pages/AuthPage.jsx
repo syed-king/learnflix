@@ -32,7 +32,7 @@ export default function AuthPage() {
       <div className="auth-bg" />
       <div className="auth-overlay" />
       <nav className="auth-nav">
-        <div className="logo"><Play size={28} fill="#e50914" color="#e50914" /><span>LearnFlix</span></div>
+        <div className="logo"><Play size={28} fill="#e50914" color="#e50914" /><span>Almiftah</span></div>
       </nav>
       <div className="auth-container">
         <div className="auth-card">

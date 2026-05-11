@@ -8,7 +8,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/home" className="logo"><Play size={24} fill="#e50914" color="#e50914" /><span>LearnFlix</span></Link>
+      <Link to="/home" className="logo"><Play size={24} fill="#e50914" color="#e50914" /><span>Almiftah</span></Link>
       <div className="nav-links">
         <Link to="/home">Home</Link>
         {user?.is_staff && <Link to="/admin"><Shield size={16} /> Admin</Link>}

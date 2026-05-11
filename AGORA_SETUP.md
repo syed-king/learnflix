@@ -4,14 +4,14 @@
 1. Go to https://console.agora.io/
 2. Sign up (use any email)
 3. Click "Create Project"
-4. Project name: `LearnFlix`
+4. Project name: `Almiftah`
 5. Authentication: **Secured mode: APP ID**
 6. Click "Submit"
 7. Copy the **App ID** (looks like: `a1b2c3d4e5f6g7h8i9j0`)
 
 ## Step 2: Add to Vercel
 1. Go to https://vercel.com/dashboard
-2. Select your LearnFlix project
+2. Select your Almiftah project
 3. Settings → Environment Variables
 4. Add new variable:
    - Name: `VITE_AGORA_APP_ID`

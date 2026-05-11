@@ -2,7 +2,7 @@
 
 ## Real-Time Camera/Mic Streaming with Agora
 
-LearnFlix uses **Agora.io** for real-time video streaming where publishers can turn on their camera/mic and viewers watch instantly.
+Almiftah uses **Agora.io** for real-time video streaming where publishers can turn on their camera/mic and viewers watch instantly.
 
 ### Setup Steps:
 
