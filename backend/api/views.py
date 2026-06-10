@@ -18,6 +18,12 @@ def is_publisher(user):
     return user.is_staff
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    return Response({'status': 'ok'})
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
