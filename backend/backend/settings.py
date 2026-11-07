@@ -49,8 +49,20 @@ TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIR
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-# Database — uses PostgreSQL on Railway, SQLite locally
-DATABASE_URL = config('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')
+# Database — uses PostgreSQL when reachable, falls back to SQLite if unset or expired
+DATABASE_URL = config('DATABASE_URL', default='')
+if DATABASE_URL and DATABASE_URL.startswith(('postgres://', 'postgresql://')):
+    try:
+        import psycopg2
+        _conn = psycopg2.connect(DATABASE_URL, connect_timeout=3)
+        _conn.close()
+    except Exception as _e:
+        import sys
+        print(f"WARNING: PostgreSQL DATABASE_URL unreachable ({_e}). Falling back to SQLite.", file=sys.stderr)
+        DATABASE_URL = f'sqlite:///{BASE_DIR / "db.sqlite3"}'
+elif not DATABASE_URL:
+    DATABASE_URL = f'sqlite:///{BASE_DIR / "db.sqlite3"}'
+
 DATABASES = {'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -88,14 +100,15 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173', cast=Csv())
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,https://learnflix-blush.vercel.app', cast=Csv())
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
 
 # Security headers (active in production)
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
+    # SECURE_SSL_REDIRECT disabled — Render handles SSL at the load balancer level
+    SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000

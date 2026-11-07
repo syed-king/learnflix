@@ -261,7 +261,7 @@ def stream_control(request, pk):
     return Response(LiveStreamSerializer(stream).data)
 
 
-@api_view(['PUT'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def stream_update(request, pk):
     if not is_publisher(request.user):
@@ -273,6 +273,8 @@ def stream_update(request, pk):
             stream = LiveStream.objects.get(pk=pk, publisher=request.user)
     except LiveStream.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
+    if request.method == 'GET':
+        return Response(LiveStreamSerializer(stream).data)
     serializer = LiveStreamSerializer(stream, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
@@ -284,10 +286,13 @@ def stream_update(request, pk):
 @permission_classes([IsAuthenticated])
 def all_publisher_videos(request):
     publisher_id = request.query_params.get('publisher')
+    search = request.query_params.get('search')
     if publisher_id:
         videos = PublisherVideo.objects.filter(publisher__id=publisher_id).order_by('-created_at')
     else:
         videos = PublisherVideo.objects.all().order_by('-created_at')
+    if search:
+        videos = videos.filter(title__icontains=search)
     return Response(PublisherVideoSerializer(videos, many=True).data)
 
 
